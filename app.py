@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client
-import pd
+import pandas as pd
 import plotly.express as px
 import time
 
@@ -108,3 +108,4 @@ with tab_progres:
             st.warning("📊 Grafik belum bisa ditampilkan. Silakan kerjakan kuis satu kali lagi untuk mengisi data kategori.")
     else:
         st.info("Belum ada riwayat tes.")
+
