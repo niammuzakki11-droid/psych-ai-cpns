@@ -124,3 +124,34 @@ if res_leaderboard.data:
     df_leader = pd.DataFrame(res_leaderboard.data)
     # Menampilkan tabel tanpa index agar lebih rapi
     st.sidebar.table(df_leader)
+
+import google.generativeai as genai
+import json
+
+# Konfigurasi Gemini
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+def get_hybrid_questions(total_soal=10):
+    half = total_soal // 2
+    
+    # 1. AMBIL 50% DARI DATABASE (SOAL LAMA)
+    res_db = supabase.table("bank_soal").select("*").limit(half).execute()
+    soal_lama = res_db.data
+    
+    # 2. GENERATE 50% BARU DARI GEMINI
+    # Kita berikan instruksi agar formatnya sama persis dengan tabel kita
+    prompt = f"""Buatkan {half} soal CPNS kategori TIU/TWK/TKP dalam format JSON.
+    Wajib memiliki key: pertanyaan, opsi_a, opsi_b, opsi_c, opsi_d, jawaban_benar, kategori, pembahasan.
+    Berikan hanya raw JSON saja."""
+    
+    response = model.generate_content(prompt)
+    # Membersihkan teks dari markdown jika ada
+    clean_json = response.text.replace("```json", "").replace("```", "").strip()
+    soal_baru = json.loads(clean_json)
+    
+    # 3. AUTO-GROW: SIMPAN SOAL BARU KE SUPABASE
+    if soal_baru:
+        supabase.table("bank_soal").insert(soal_baru).execute()
+    
+    return soal_lama + soal_baru
