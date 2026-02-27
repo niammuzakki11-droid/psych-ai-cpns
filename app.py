@@ -97,4 +97,11 @@ with tab_progres:
             avg_scores.columns = ['Aspek Kognitif', 'Rata-rata Skor']
             
             fig = px.bar(avg_scores, x='Aspek Kognitif', y='Rata-rata Skor', 
-                         color='Asp
+                         color='Aspek Kognitif', title="Kekuatan Kamu Per Kategori")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            st.info("💡 *Tips:* Fokuskan belajar pada kategori dengan bar terendah.")
+        else:
+            st.warning("📊 Grafik belum bisa ditampilkan. Silakan kerjakan kuis satu kali lagi untuk mengisi data kategori.")
+    else:
+        st.info("Belum ada riwayat tes.")
