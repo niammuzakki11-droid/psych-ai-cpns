@@ -109,3 +109,18 @@ with tab_progres:
     else:
         st.info("Belum ada riwayat tes.")
 
+# --- FITUR LEADERBOARD ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("🏆 Top Pejuang CPNS")
+
+# Ambil 5 skor tertinggi dari database
+res_leaderboard = supabase.table("user_scores") \
+    .select("nama_user, skor_total") \
+    .order("skor_total", desc=True) \
+    .limit(5) \
+    .execute()
+
+if res_leaderboard.data:
+    df_leader = pd.DataFrame(res_leaderboard.data)
+    # Menampilkan tabel tanpa index agar lebih rapi
+    st.sidebar.table(df_leader)
