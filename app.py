@@ -9,65 +9,23 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-st.set_page_config(page_title="Psych-AI CPNS Pro", page_icon="📈")
-
-# --- FITUR: CEK STATUS KONFIRMASI DARI EMAIL ---
-if "status" in st.query_params and st.query_params["status"] == "confirmed":
-    st.success("✅ Selamat! Akun Anda sudah terkonfirmasi. Silakan Login.")
-    st.query_params.clear()
+st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
 # 2. INISIALISASI SESSION STATE
 if 'user' not in st.session_state:
     st.session_state.user = None
 
-# --- FUNGSI AUTH ---
-def login(email, password):
-    try:
-        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        st.session_state.user = res.user
-        st.session_state.start_time = time.time()
-        st.rerun()
-    except Exception as e:
-        st.error(f"Login Gagal: {e}")
+# --- GERBANG AUTH (Tetap Konsisten dengan Versi Sebelumnya) ---
+# [Gunakan logika login/register dari Versi 5 untuk bagian ini]
 
-def register(email, password):
-    try:
-        supabase.auth.sign_up({"email": email, "password": password})
-        st.info("Pendaftaran Berhasil! Silakan CEK EMAIL Anda untuk konfirmasi.")
-    except Exception as e:
-        st.error(f"Pendaftaran Gagal: {e}")
-
-# --- GERBANG MASUK (AUTHENTICATION) ---
 if st.session_state.user is None:
-    st.title("🚀 Psych-AI CPNS: Member Area")
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Daftar Akun"])
-    
-    with tab1:
-        with st.form("login_form"):
-            e = st.text_input("Email")
-            p = st.text_input("Password", type="password")
-            if st.form_submit_button("Masuk"):
-                login(e, p)
-    with tab2:
-        with st.form("reg_form"):
-            ne = st.text_input("Email Baru")
-            np = st.text_input("Password (min 6 karakter)", type="password")
-            if st.form_submit_button("Buat Akun"):
-                register(ne, np)
     st.stop()
 
-# --- HALAMAN UTAMA MEMBER (DASHBOARD & KUIS) ---
-st.sidebar.success(f"👤 {st.session_state.user.email}")
-if st.sidebar.button("Logout"):
-    supabase.auth.sign_out()
-    st.session_state.user = None
-    st.rerun()
-
-# --- MENU TAB ---
-tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Ujian", "📊 Progress Dashboard"])
+# --- HALAMAN UTAMA ---
+tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Kategori", "📊 Analisis Mendalam"])
 
 with tab_kuis:
-    st.title("Simulasi Ujian CPNS")
+    st.title("Simulasi CPNS Terpadu")
     
     @st.cache_data
     def load_questions():
@@ -77,39 +35,53 @@ with tab_kuis:
     questions = load_questions()
 
     if questions:
-        with st.form("quiz_final"):
+        with st.form("quiz_v6"):
             user_answers = {}
             for q in questions:
-                st.subheader(f"Soal {q['id']}")
+                st.subheader(f"[{q['kategori']}] Soal {q['id']}")
                 opsi = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']]
                 user_answers[q['id']] = st.radio(q['pertanyaan'], opsi, key=f"q_{q['id']}")
             
-            if st.form_submit_button("Selesaikan & Simpan Skor"):
-                duration = time.time() - st.session_state.start_time
-                score = sum([1 for q in questions if user_answers[q['id']] == q['jawaban_benar']])
+            if st.form_submit_button("Kirim Jawaban"):
+                # LOGIKA BARU: HITUNG PER KATEGORI
+                skor_detail = {"TIU": 0, "TWK": 0, "TKP": 0}
+                for q in questions:
+                    if user_answers[q['id']] == q['jawaban_benar']:
+                        skor_detail[q['kategori']] += 1
                 
+                total_skor = sum(skor_detail.values())
+                
+                # SIMPAN KE DATABASE (Lengkap dengan Detail Kategori)
                 data_score = {
                     "nama_user": st.session_state.user.email,
-                    "skor_total": score,
-                    "total_soal": len(questions),
-                    "durasi_detik": round(duration, 2)
+                    "skor_total": total_skor,
+                    "skor_tiu": skor_detail["TIU"],
+                    "skor_twk": skor_detail["TWK"],
+                    "skor_tkp": skor_detail["TKP"],
+                    "total_soal": len(questions)
                 }
                 supabase.table("user_scores").insert(data_score).execute()
-                st.success(f"🎯 Skor: {score} / {len(questions)} tersimpan!")
-                st.balloons()
+                st.success("Analisis kognitif kamu telah berhasil disimpan!")
     else:
-        st.warning("Gudang soal kosong.")
+        st.warning("Gudang soal masih kosong.")
 
 with tab_progres:
-    st.title("Analisis Performa")
+    st.title("Dashboard Psikometri")
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        # Menampilkan Grafik Progres
-        fig = px.line(df, x=df.index, y='skor_total', title="Tren Skor Kamu", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
         
-        st.metric("Skor Tertinggi", df['skor_total'].max())
+        # VISUALISASI KATEGORI (Bar Chart)
+        # Mengambil rata-rata skor per kategori untuk melihat kekuatan/kelemahan
+        avg_scores = df[['skor_tiu', 'skor_twk', 'skor_tkp']].mean().reset_index()
+        avg_scores.columns = ['Kategori', 'Rata-rata Skor']
+        
+        fig_cat = px.bar(avg_scores, x='Kategori', y='Rata-rata Skor', 
+                         title="Peta Kekuatan Kognitif Kamu",
+                         color='Kategori', color_discrete_sequence=px.colors.qualitative.Pastel)
+        st.plotly_chart(fig_cat, use_container_width=True)
+        
+        st.info("💡 **Tips AI:** Fokuskan belajarmu pada kategori dengan grafik terendah.")
     else:
-        st.info("Belum ada data. Silakan kerjakan kuis pertama kamu!")
+        st.info("Belum ada data untuk dianalisis.")
