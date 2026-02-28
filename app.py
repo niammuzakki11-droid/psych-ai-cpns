@@ -280,43 +280,72 @@ with tab_kuis:
                 
 with tab_progres:
     st.title("📊 Analisis Psikometri Mendalam")
-    # Ambil data terbaru
+    
+    # Ambil data terbaru dari Supabase
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        
-        # Jika data ada, tampilkan metrik terbaru
         if not df.empty:
             latest = df.iloc[-1]
             
-            # Tampilkan Ringkasan Skor dalam Box Cantik
-            st.subheader(f"Hasil Terakhir: {latest.get('tanggal_tes', 'Baru saja')[:10]}")
-            
-            # --- 1. DATA UNTUK GRAFIK ---
-            chart_data = pd.DataFrame({
-                'Kategori': ['TIU', 'TWK', 'TKP'],
-                'Skor Anda': [latest['skor_tiu'], latest['skor_twk'], latest['skor_tkp']],
-                'Target BKN': [PASSING_TIU, PASSING_TWK, PASSING_TKP]
-            })
-            
-            df_plot = chart_data.melt(id_vars='Kategori', var_name='Tipe', value_name='Nilai')
-            
-            fig = px.bar(df_plot, x='Kategori', y='Nilai', color='Tipe', 
-                         barmode='group',
-                         color_discrete_map={'Skor Anda': '#1E88E5', 'Target BKN': '#FF5252'},
-                         title="Perbandingan Skor Terakhir vs Ambang Batas BKN")
-            
-            # --- FITUR KUNCI GRAFIK (LOCK AXIS) ---
-            fig.update_layout(
-                yaxis_range=[0, 200],  # Mengunci skala 0-200 agar tidak lompat-lompat
-                xaxis={'categoryorder':'array', 'categoryarray':['TIU','TWK','TKP']},
-                dragmode=False,        # Mematikan zoom agar grafik tidak rusak saat di-scroll
-                hovermode="x unified"
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+            # --- 1. GRAFIK RADAR (Visualisasi ala Data Scientist) ---
+            import plotly.graph_objects as go
 
+            categories = ['TIU', 'TWK', 'TKP']
+            # Normalisasi skor ke skala 0-100 agar grafik radar simetris
+            scores_norm = [
+                (latest['skor_tiu'] / 175) * 100, 
+                (latest['skor_twk'] / 150) * 100, 
+                (latest['skor_tkp'] / 225) * 100
+            ]
+
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=scores_norm,
+                theta=categories,
+                fill='toself',
+                name='Profil Anda',
+                line_color='#1E88E5'
+            ))
+
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                showlegend=True,
+                title="Radar Kompetensi (Skala 100)"
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+
+            # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
+            st.subheader("💡 Analisis Performa AI")
+            
+            # Cari kategori dengan persentase terendah
+            pct_scores = {
+                'TIU': (latest['skor_tiu'] / 175),
+                'TWK': (latest['skor_twk'] / 150),
+                'TKP': (latest['skor_tkp'] / 225)
+            }
+            weakest = min(pct_scores, key=pct_scores.get)
+            strongest = max(pct_scores, key=pct_scores.get)
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.success(f"✅ **Kekuatan Utama:** {strongest}")
+                st.write("Pertahankan performa ini! Kamu sudah memiliki pondasi yang kuat di aspek ini.")
+            with c2:
+                st.error(f"⚠️ **Perlu Ditingkatkan:** {weakest}")
+                st.write(f"Fokuslah mempelajari materi {weakest} lebih dalam untuk mengejar ambang batas.")
+
+            # --- 3. STATUS KELULUSAN (Metrik) ---
+            st.divider()
+            col1, col2, col3 = st.columns(3)
+            with col1: st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
+            with col2: st.metric("Skor TWK", latest['skor_twk'], f"Target {PASSING_TWK}")
+            with col3: st.metric("Skor TKP", latest['skor_tkp'], f"Target {PASSING_TKP}")
+
+    else:
+        st.info("Belum ada data kuis. Selesaikan simulasi pertama kamu untuk melihat analisis!")
+            
             # --- 2. EVALUASI AMBANG BATAS ---
             st.markdown("---")
             st.subheader("📋 Status Kelulusan Terakhir")
@@ -355,6 +384,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
