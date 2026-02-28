@@ -22,6 +22,24 @@ supabase = create_client(url, key)
 
 st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
+# --- TARUH CSS DI SINI (Setelah set_page_config) ---
+st.markdown("""
+    <style>
+    /* Mengubah tombol 'primary' menjadi Hijau (Terjawab/Ragu) */
+    div.stButton > button[kind="primary"] {
+        background-color: #28a745 !important;
+        color: white !important;
+        border: none !important;
+    }
+    /* Membuat tombol 'secondary' tetap Abu-abu (Belum Terjawab) */
+    div.stButton > button[kind="secondary"] {
+        background-color: #f0f2f6 !important;
+        color: #31333f !important;
+        border: 1px solid #dcdcdc !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- LOGIKA AUTO-LOGIN YANG AMAN ---
 # 1. Ambil token (kunci) dari laci browser
 saved_token = controller.get('supabase_token') 
@@ -142,7 +160,7 @@ with tab_kuis:
         st.sidebar.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
         st.write(f"👤 **Peserta:** {st.session_state.user.email}")
 
-        # 2. GRID NAVIGASI (Perbaikan Layout & Tipe Tombol)
+        # 2. GRID NAVIGASI (Fixing Logic Warna & Tipe)
         st.markdown("### Navigasi Soal")
         n_soal = len(st.session_state.test_questions)
         for row_start in range(0, n_soal, 10): 
@@ -152,13 +170,16 @@ with tab_kuis:
                 if idx < n_soal:
                     q_id = st.session_state.test_questions[idx]['id']
                     
-                    # LOGIKA WARNA TOMBOL
+                    # --- LOGIKA WARNA TOMBOL CAT BKN ---
                     if st.session_state.ragu_ragu.get(q_id):
-                        btn_label, btn_type = f"⚠️ {idx+1}", "primary" # Kuning/Highlight
+                        # Ragu-ragu: Tetap pakai icon agar beda secara visual
+                        btn_label, btn_type = f"⚠️ {idx+1}", "primary"
                     elif q_id in st.session_state.user_answers:
-                        btn_label, btn_type = f"{idx+1}", "secondary" # Biru/Terisi
+                        # TERJAWAB: Gunakan 'primary' agar berubah HIJAU via CSS
+                        btn_label, btn_type = f"{idx+1}", "primary"
                     else:
-                        btn_label, btn_type = f"{idx+1}", "secondary" # Default (Tidak Error)
+                        # BELUM TERJAWAB: Gunakan 'secondary' (Abu-abu/Putih)
+                        btn_label, btn_type = f"{idx+1}", "secondary"
                     
                     if cols[i].button(btn_label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
                         st.session_state.current_idx = idx
@@ -312,6 +333,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
