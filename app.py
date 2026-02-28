@@ -270,7 +270,7 @@ with tab_kuis:
                 st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
                 
 with tab_progres:
-    st.title("📊 Analisis Psikometri Mendalam")
+    st.title("📊 Analisis Psikometri")
     
     # Ambil data terbaru dari Supabase
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
@@ -308,7 +308,7 @@ with tab_progres:
             st.plotly_chart(fig_radar, use_container_width=True)
 
             # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
-            st.subheader("💡 Analisis Performa AI")
+            st.subheader("💡 Analisis Performa")
             
             # Cari kategori dengan persentase terendah
             pct_scores = {
@@ -372,6 +372,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
