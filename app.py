@@ -154,7 +154,7 @@ with tab_kuis:
                             st.info(f"💡 Jawaban Benar: {c_ans}")
                             
                         # Menampilkan penjelasan kognitif/psikologis
-                        st.info(f"🧠 **Pembahasan:** {q.get('penjelasan', 'Belum ada penjelasan untuk soal ini.')}")
+                        st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan untuk soal ini.')}")
     
     else:
         st.warning("Belum ada soal.")
@@ -233,6 +233,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
