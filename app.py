@@ -139,23 +139,23 @@ with tab_kuis:
                 st.markdown("---")
                 st.subheader("📝 Review Hasil Ujian & Pembahasan")
                     
-                   for q in questions:
-                       # Menggunakan expander agar tampilan tidak terlalu panjang ke bawah
-                       with st.expander(f"Soal {q['id']}: {q.get('kategori', 'Umum')}"):
-                          u_ans = user_answers.get(q['id'])
-                          c_ans = q['jawaban_benar']
+                for q in questions:
+                    # Menggunakan expander agar tampilan tidak terlalu panjang ke bawah
+                    with st.expander(f"Soal {q['id']}: {q.get('kategori', 'Umum')}"):
+                        u_ans = user_answers.get(q['id'])
+                        c_ans = q['jawaban_benar']
                             
-                          st.write(f"**Pertanyaan:** {q['pertanyaan']}")
+                        st.write(f"**Pertanyaan:** {q['pertanyaan']}")
                             
-                          if u_ans == c_ans:
-                              st.success(f"✅ Jawaban Anda: {u_ans} (BENAR)")
-                          else:
-                              st.error(f"❌ Jawaban Anda: {u_ans}")
-                              st.info(f"💡 Jawaban Benar: {c_ans}")
+                        if u_ans == c_ans:
+                            st.success(f"✅ Jawaban Anda: {u_ans} (BENAR)")
+                        else:
+                            st.error(f"❌ Jawaban Anda: {u_ans}")
+                            st.info(f"💡 Jawaban Benar: {c_ans}")
                             
-                          # Menampilkan penjelasan kognitif/psikologis
-                          st.info(f"🧠 **Pembahasan:** {q.get('penjelasan', 'Belum ada penjelasan untuk soal ini.')}")
-                            
+                        # Menampilkan penjelasan kognitif/psikologis
+                        st.info(f"🧠 **Pembahasan:** {q.get('penjelasan', 'Belum ada penjelasan untuk soal ini.')}")
+    
     else:
         st.warning("Belum ada soal.")
 
@@ -233,6 +233,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
