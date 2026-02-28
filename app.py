@@ -16,32 +16,66 @@ if 'user' not in st.session_state:
     st.session_state.user = None
 
 # --- GERBANG MASUK (LOGIN & REGISTER) ---
+# --- 1. INISIALISASI SESSION STATE (Letakkan di bagian paling atas setelah import) ---
+if 'user' not in st.session_state:
+    st.session_state.user = None
+
+# --- 2. FUNGSI LOGIKA (MODULAR) ---
+def handle_login(email, password):
+    try:
+        # Mencoba masuk ke Supabase
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        st.session_state.user = res.user
+        st.success("🎉 Login Berhasil! Mempersiapkan dashboard...")
+        time.sleep(1) # Memberi waktu user membaca pesan sukses
+        st.rerun()
+    except Exception as e:
+        # Menangani pesan error spesifik jika email belum dikonfirmasi
+        error_msg = str(e).lower()
+        if "email not confirmed" in error_msg:
+            st.warning("⚠️ Email Anda belum dikonfirmasi. Silakan cek Inbox/Spam email Anda!")
+        else:
+            st.error("❌ Login Gagal: Email atau Password salah.")
+
+def handle_register(email, password):
+    try:
+        supabase.auth.sign_up({"email": email, "password": password})
+        st.info("📨 Link konfirmasi telah dikirim! Segera cek email Anda untuk mengaktifkan akun.")
+    except Exception as e:
+        st.error(f"❌ Gagal Daftar: {e}")
+
+# --- 3. ANTARMUKA PENGGUNA (UI) ---
 if st.session_state.user is None:
-    st.title("🚀 Member Area")
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Daftar Akun"])
+    st.title("🚀 Pejuang CPNS: Psych-AI Dashboard")
+    st.markdown("Silakan masuk untuk mulai simulasi kognitif Anda.")
     
-    with tab1:
-        with st.form("login_form"):
-            e = st.text_input("Email")
-            p = st.text_input("Password", type="password")
-            if st.form_submit_button("Masuk"):
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": e, "password": p})
-                    st.session_state.user = res.user
-                    st.session_state.start_time = time.time()
-                    st.rerun()
-                except: st.error("Email/Password salah atau belum konfirmasi email.")
+    # Menggunakan Tabs agar rapi dan tidak saling tindih
+    tab_masuk, tab_daftar = st.tabs(["🔑 Login Member", "📝 Daftar Akun Baru"])
     
-    with tab2:
-        with st.form("reg_form"):
-            ne = st.text_input("Email Baru")
-            np = st.text_input("Password (min 6 karakter)", type="password")
-            if st.form_submit_button("Buat Akun"):
-                try:
-                    supabase.auth.sign_up({"email": ne, "password": np})
-                    st.info("Pendaftaran Berhasil! Silakan CEK EMAIL Anda untuk konfirmasi.")
-                except Exception as ex: st.error(f"Gagal Daftar: {ex}")
-    st.stop() # Hentikan di sini agar kuis tidak terlihat sebelum login
+    with tab_masuk:
+        with st.form("form_login"):
+            email_input = st.text_input("Email", placeholder="nama@email.com")
+            pass_input = st.text_input("Password", type="password")
+            submit_l = st.form_submit_button("Masuk Sekarang")
+            if submit_l:
+                if email_input and pass_input:
+                    handle_login(email_input, pass_input)
+                else:
+                    st.warning("Mohon isi email dan password.")
+                    
+    with tab_daftar:
+        with st.form("form_daftar"):
+            new_email = st.text_input("Email Baru", placeholder="pejuang@cpns.com")
+            new_pass = st.text_input("Buat Password (minimal 6 karakter)", type="password")
+            submit_d = st.form_submit_button("Buat Akun Saya")
+            if submit_d:
+                if new_email and len(new_pass) >= 6:
+                    handle_register(new_email, new_pass)
+                else:
+                    st.warning("Password minimal harus 6 karakter.")
+    
+    # Berhenti di sini jika belum login (PENTING: Jangan taruh st.stop() di dalam tab)
+    st.stop()
 
 # --- HALAMAN UTAMA MEMBER ---
 st.sidebar.info(f"👤 {st.session_state.user.email}")
@@ -124,3 +158,4 @@ if res_leaderboard.data:
     df_leader = pd.DataFrame(res_leaderboard.data)
     # Menampilkan tabel tanpa index agar lebih rapi
     st.sidebar.table(df_leader)
+
