@@ -97,102 +97,113 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Ujian", "📊 Analisis Psikometri"])
+
 with tab_kuis:
     st.title("🛡️ Simulasi SKD CPNS 2024 (Standar BKN)")
     
-    # --- INISIALISASI STATE SIMULASI ---
+    # 1. INISIALISASI STATE (Agar data tidak hilang saat refresh)
     if 'test_active' not in st.session_state:
         st.session_state.test_active = False
     if 'test_questions' not in st.session_state:
         st.session_state.test_questions = []
+    if 'submitted' not in st.session_state:
+        st.session_state.submitted = False
 
-    # --- TAMPILAN AWAL (SEBELUM MULAI) ---
-    if not st.session_state.test_active:
-        st.info("""
+    # --- KONDISI A: HALAMAN AWAL (TOMBOL MULAI) ---
+    if not st.session_state.test_active and not st.session_state.submitted:
+        st.info(f"""
         **Panduan Ujian:**
-        - Total Soal: 110 (45 TKP, 35 TIU, 30 TWK)
-        - Waktu: 100 Menit
-        - Sistem akan otomatis berhenti jika waktu habis.
+        - **Total Soal:** 110 (45 TKP, 35 TIU, 30 TWK)
+        - **Waktu:** 100 Menit
+        - **Sistem:** Acak & Standar Passing Grade BKN.
         """)
         
         if st.button("🚀 MULAI SIMULASI SEKARANG", use_container_width=True):
-            # 1. Ambil & Acak Soal Berdasarkan Rasio 2024
+            # Ambil semua soal dari Supabase
             res_soal = supabase.table("bank_soal").select("*").execute()
             if res_soal.data:
                 df_all = pd.DataFrame(res_soal.data)
                 
-                # Fungsi ambil sampel acak (mencegah error jika soal belum cukup)
-                def ambil_soal(kat, jml):
+                # Fungsi acak & rasio sesuai permintaan (45:35:30)
+                def ambil_acak(kat, jml):
                     df_kat = df_all[df_all['kategori'] == kat]
                     return df_kat.sample(n=min(len(df_kat), jml)).to_dict('records')
 
-                q_tkp = ambil_soal('TKP', 45) #
-                q_tiu = ambil_soal('TIU', 35) #
-                q_twk = ambil_soal('TWK', 30) #
+                st.session_state.test_questions = ambil_acak('TKP', 45) + \
+                                                  ambil_acak('TIU', 35) + \
+                                                  ambil_acak('TWK', 30)
                 
-                st.session_state.test_questions = q_tkp + q_tiu + q_twk
                 st.session_state.test_active = True
                 st.session_state.start_time = time.time()
                 st.rerun()
             else:
-                st.error("Bank soal masih kosong. Silakan upload soal terlebih dahulu!")
+                st.error("Gagal mengambil soal. Pastikan tabel 'bank_soal' tidak kosong!")
 
-    # --- TAMPILAN SAAT UJIAN BERJALAN ---
-    else:
-        # 1. LOGIKA TIMER (100 Menit = 6000 Detik)
-        durasi_limit = 100 * 60 
-        waktu_berjalan = time.time() - st.session_state.start_time
-        sisa_waktu = max(0, int(durasi_limit - waktu_berjalan))
+    # --- KONDISI B: SAAT UJIAN BERJALAN ---
+    elif st.session_state.test_active:
+        # 1. TIMER LOGIC (100 Menit)
+        sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
         
-        # Display Timer yang melayang di Sidebar
-        st.sidebar.warning(f"⏳ Sisa Waktu: {sisa_waktu // 60} Menit {sisa_waktu % 60} Detik")
-
         if sisa_waktu <= 0:
-            st.error("⏰ WAKTU HABIS! Sistem akan menyimpan jawaban terakhir Anda.")
-            # Masukkan logika auto-submit di sini jika diperlukan
+            st.error("⏰ WAKTU HABIS!")
             st.session_state.test_active = False
+            st.session_state.submitted = True
             st.rerun()
 
-        # 2. FORM PENGERJAAN
-        with st.form("quiz_simulasi"):
+        st.sidebar.warning(f"⏳ Sisa Waktu: {sisa_waktu // 60}m {sisa_waktu % 60}s")
+        
+        with st.form("quiz_form"):
             user_answers = {}
             for i, q in enumerate(st.session_state.test_questions):
-                st.markdown(f"**Soal {i+1}** ({q['kategori']})")
-                user_answers[q['id']] = st.radio(q['pertanyaan'], 
+                st.markdown(f"**Soal {i+1}** : {q['pertanyaan']}")
+                user_answers[q['id']] = st.radio(f"Pilih jawaban untuk soal {i+1}", 
                                                 [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']], 
-                                                key=f"sim_{q['id']}")
+                                                key=f"q_{q['id']}", label_visibility="collapsed")
+                st.markdown("---")
             
-            if st.form_submit_button("KIRIM JAWABAN"):
-                # Hitung Skor & Simpan (Gunakan logika perhitungan yang sudah kita buat sebelumnya)
-                # ... (Logika kalkulasi skor & Supabase insert tetap sama) ...
+            submit_ujian = st.form_submit_button("KIRIM JAWABAN")
+            
+            if submit_ujian:
+                # HITUNG SKOR
+                skor_det = {"TIU": 0, "TWK": 0, "TKP": 0}
+                for q in st.session_state.test_questions:
+                    ans = user_answers.get(q['id'])
+                    if q['kategori'] in ['TIU', 'TWK']:
+                        if ans == q['jawaban_benar']: skor_det[q['kategori']] += 5
+                    else: # TKP (Logika sederhana 5 poin jika benar, idealnya 1-5)
+                        if ans == q['jawaban_benar']: skor_det['TKP'] += 5
+                
+                # SIMPAN KE SUPABASE
+                supabase.table("user_scores").insert({
+                    "nama_user": st.session_state.user.email,
+                    "skor_total": sum(skor_det.values()),
+                    "skor_tiu": skor_det["TIU"],
+                    "skor_twk": skor_det["TWK"],
+                    "skor_tkp": skor_det["TKP"],
+                    "total_soal": len(st.session_state.test_questions)
+                }).execute()
                 
                 st.session_state.test_active = False
-                st.success("Berhasil! Hasil ujian Anda telah disimpan.")
-                st.balloons()
+                st.session_state.submitted = True
+                st.session_state.final_answers = user_answers # Simpan untuk review
+                st.rerun()
+
+    # --- KONDISI C: HASIL & REVIEW (SETELAH SELESAI) ---
+    elif st.session_state.submitted:
+        st.success("🎉 Ujian Selesai! Skor Anda telah dicatat di tab Progres.")
+        if st.button("Ulangi Simulasi"):
+            st.session_state.submitted = False
+            st.rerun()
+        
+        st.subheader("📝 Pembahasan Soal")
+        for q in st.session_state.test_questions:
+            with st.expander(f"Soal: {q['pertanyaan'][:50]}..."):
+                u_ans = st.session_state.final_answers.get(q['id'])
+                st.write(f"**Pertanyaan:** {q['pertanyaan']}")
+                st.write(f"**Jawaban Anda:** {u_ans}")
+                st.write(f"**Jawaban Benar:** {q['jawaban_benar']}")
+                st.info(f"💡 **Pembahasan:** {q.get('pembahasan', 'Tidak ada pembahasan.')}")
                 
-                # Tampilkan Review Jawaban di sini
-                st.markdown("---")
-                st.subheader("📝 Review Hasil Ujian & Pembahasan")
-                    
-                for q in questions:
-                    # Menggunakan expander agar tampilan tidak terlalu panjang ke bawah
-                    with st.expander(f"Soal {q['id']}: {q.get('kategori', 'Umum')}"):
-                        u_ans = user_answers.get(q['id'])
-                        c_ans = q['jawaban_benar']
-                            
-                        st.write(f"**Pertanyaan:** {q['pertanyaan']}")
-                            
-                        if u_ans == c_ans:
-                            st.success(f"✅ Jawaban Anda: {u_ans} (BENAR)")
-                        else:
-                            st.error(f"❌ Jawaban Anda: {u_ans}")
-                            st.info(f"💡 Jawaban Benar: {c_ans}")
-                            
-                        # Menampilkan penjelasan kognitif/psikologis
-                        st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan untuk soal ini.')}")
-    
-    else:
-        st.warning("Belum ada soal.")
 
 with tab_progres:
     st.title("📊 Analisis Psikometri Mendalam")
@@ -268,6 +279,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
