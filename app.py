@@ -136,65 +136,68 @@ with tab_kuis:
                 st.balloons()
     else:
         st.warning("Belum ada soal.")
-
+            
 with tab_progres:
-    st.title("Peta Kekuatan Kognitif")
+    st.title("📊 Analisis Psikometri Mendalam")
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).execute()
     
-    if res.data: # JIKA ADA DATA
+    if res.data:
         df = pd.DataFrame(res.data)
-
-        # 1. Tampilkan Grafik
-        avg_scores = df[['skor_tiu', 'skor_twk', 'skor_tkp']].mean().reset_index()
-        avg_scores.columns = ['Kategori', 'Skor']
-        st.plotly_chart(px.bar(avg_scores, x='Kategori', y='Skor', color='Kategori'), use_container_width=True)
-
-        # 2. Ambil Data Tes Terbaru untuk Evaluasi
         df_clean = df.dropna(subset=['skor_tiu', 'skor_twk', 'skor_tkp'])
         
         if not df_clean.empty:
-            latest_test = df_clean.iloc[-1] 
+            latest = df_clean.iloc[-1]
+            
+            # --- 1. GRAFIK PRO: SKOR VS AMBANG BATAS ---
+            # Kita buat data perbandingan untuk grafik
+            chart_data = pd.DataFrame({
+                'Kategori': ['TIU', 'TWK', 'TKP'],
+                'Skor Anda': [latest['skor_tiu'], latest['skor_twk'], latest['skor_tkp']],
+                'Target BKN': [PASSING_TIU, PASSING_TWK, PASSING_TKP]
+            })
+            
+            # Melakukan "melt" agar data bisa ditampilkan berdampingan oleh Plotly
+            df_plot = chart_data.melt(id_vars='Kategori', var_name='Tipe', value_name='Nilai')
+            
+            fig = px.bar(df_plot, x='Kategori', y='Nilai', color='Tipe', 
+                         barmode='group', # Berdampingan
+                         color_discrete_map={'Skor Anda': '#1E88E5', 'Target BKN': '#FF5252'},
+                         title="Perbandingan Skor Terakhir vs Ambang Batas BKN")
+            
+            st.plotly_chart(fig, use_container_width=True)
 
+            # --- 2. EVALUASI AMBANG BATAS ---
             st.markdown("---")
-            st.subheader("📋 Hasil Evaluasi Ambang Batas")
-
-            # Logika Ambang Batas
-            if latest_test['skor_tiu'] >= PASSING_TIU and \
-               latest_test['skor_twk'] >= PASSING_TWK and \
-               latest_test['skor_tkp'] >= PASSING_TKP:
-                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas CPNS.")
+            st.subheader("📋 Status Kelulusan Terakhir")
+            
+            if latest['skor_tiu'] >= PASSING_TIU and \
+               latest['skor_twk'] >= PASSING_TWK and \
+               latest['skor_tkp'] >= PASSING_TKP:
+                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas.")
                 st.balloons()
             else:
-                st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.") 
+                st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
                 
-                # Detail kategori yang tidak lulus
-                col1, col2, col3 = st.columns(3)
-                with col1: st.metric("TIU", latest_test['skor_tiu'], f"Butuh {PASSING_TIU}")
-                with col2: st.metric("TWK", latest_test['skor_twk'], f"Butuh {PASSING_TWK}")
-                with col3: st.metric("TKP", latest_test['skor_tkp'], f"Butuh {PASSING_TKP}")
+            col1, col2, col3 = st.columns(3)
+            with col1: st.metric("TIU", latest['skor_tiu'], f"Min {PASSING_TIU}")
+            with col2: st.metric("TWK", latest['skor_twk'], f"Min {PASSING_TWK}")
+            with col3: st.metric("TKP", latest['skor_tkp'], f"Min {PASSING_TKP}")
 
-            # 3. AI Study Path (Rekomendasi Belajar)
+            # --- 3. AI STUDY PATH ---
             st.markdown("---")
             st.subheader("🤖 AI Study Path Recommendation")
-
-            # Cari kategori terendah
-            scores_only = {
-                'TIU (Intelegensia)': latest_test['skor_tiu'],
-                'TWK (Wawasan)': latest_test['skor_twk'],
-                'TKP (Kepribadian)': latest_test['skor_tkp']
-            }
-            weakest_category = min(scores_only, key=scores_only.get)
-
-            if weakest_category == 'TIU (Intelegensia)':
-                st.error(f"⚠️ **Prioritas:** {weakest_category}. Perbanyak latihan deret angka!")
-            elif weakest_category == 'TWK (Wawasan)':
-                st.warning(f"⚠️ **Prioritas:** {weakest_category}. Fokus pada sejarah konstitusi!")
-            else:
-                st.info(f"⚠️ **Prioritas:** {weakest_category}. Tingkatkan aspek profesionalisme!")
-    else:
-        # TAMPILKAN INI JIKA DATABASE KOSONG
-        st.info("Belum ada data kuis. Silakan kerjakan simulasi pertama kamu!")
+            scores = {'TIU': latest['skor_tiu'], 'TWK': latest['skor_twk'], 'TKP': latest['skor_tkp']}
+            weakest = min(scores, key=scores.get)
             
+            if weakest == 'TIU':
+                st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda ({latest['skor_tiu']}) masih jauh dari {PASSING_TIU}.")
+            elif weakest == 'TWK':
+                st.warning(f"⚠️ **Prioritas:** Perdalam Sejarah & Pancasila. Target TWK adalah {PASSING_TWK}.")
+            else:
+                st.info(f"⚠️ **Prioritas:** Tingkatkan Kepribadian Profesional. Anda butuh {PASSING_TKP} di TKP.")
+    else:
+        st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")
+        
 
 # --- SIDEBAR LEADERBOARD ---
 st.sidebar.markdown("---")
@@ -202,6 +205,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
