@@ -217,13 +217,31 @@ with tab_kuis:
                     st.rerun()
             else:
                 if st.button("🏁 SELESAI UJIAN", type="primary"):
-                    # --- LOGIKA HITUNG SKOR AKHIR ---
+                    # --- LOGIKA HITUNG SKOR GRADASI (1-5) ---
                     skor = {"TWK": 0, "TIU": 0, "TKP": 0}
+
                     for ques in st.session_state.test_questions:
                         user_ans = st.session_state.user_answers.get(ques['id'])
                         kat = ques['kategori'].upper()
-                        if user_ans == ques['jawaban_benar']:
-                            if kat in skor: skor[kat] += 5
+    
+                        if user_ans:
+                            # 1. Identifikasi user pilih opsi mana (A, B, C, atau D)
+                            mapping_opsi = {
+                                ques['opsi_a']: 'poin_a',
+                                ques['opsi_b']: 'poin_b',
+                                ques['opsi_c']: 'poin_c',
+                                ques['opsi_d']: 'poin_d'
+                            }
+        
+                            # 2. Ambil nama kolom poin yang sesuai
+                            kolom_poin = mapping_opsi.get(user_ans)
+        
+                            # 3. Ambil nilai poin dari database (default 0 jika data tidak ada)
+                            poin_didapat = ques.get(kolom_poin, 0)
+        
+                            # 4. Tambahkan ke kategori masing-masing
+                            if kat in skor:
+                                skor[kat] += poin_didapat
                     
                     # Simpan ke Supabase
                     supabase.table("user_scores").insert({
@@ -333,6 +351,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
