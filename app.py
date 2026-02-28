@@ -193,12 +193,19 @@ with tab_kuis:
         st.markdown(f"**Kategori:** {q['kategori'].upper()}")
         st.write(q['pertanyaan'])
 
-        options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']]
+        opsi_label = ['A', 'B', 'C', 'D', 'E']
+        options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
         old_ans = st.session_state.user_answers.get(q['id'])
         
-        ans = st.radio("Jawaban:", options, index=options.index(old_ans) if old_ans in options else None, key=f"q_{q['id']}")
+        ans = st.radio(
+            "Pilih Jawaban:", 
+            options, 
+            index=options.index(old_ans) if old_ans in options else None, 
+            key=f"q_{q['id']}",
+            format_func=lambda x: f"{opsi_label[options.index(x)]}. {x}"
+        )
         if ans: st.session_state.user_answers[q['id']] = ans
-
+           
         # 4. TOMBOL KONTROL BAWAH
         st.write("")
         c1, c2, c3 = st.columns(3)
@@ -217,29 +224,26 @@ with tab_kuis:
                     st.rerun()
             else:
                 if st.button("🏁 SELESAI UJIAN", type="primary"):
-                    # --- LOGIKA HITUNG SKOR GRADASI (1-5) ---
                     skor = {"TWK": 0, "TIU": 0, "TKP": 0}
-
+                    n_soal = len(st.session_state.test_questions) # Pastikan n_soal dihitung ulang di sini
+                
                     for ques in st.session_state.test_questions:
                         user_ans = st.session_state.user_answers.get(ques['id'])
                         kat = ques['kategori'].upper()
-    
+                
                         if user_ans:
-                            # 1. Identifikasi user pilih opsi mana (A, B, C, atau D)
+                            # Mapping 5 Opsi ke 5 Kolom Poin
                             mapping_opsi = {
                                 ques['opsi_a']: 'poin_a',
                                 ques['opsi_b']: 'poin_b',
                                 ques['opsi_c']: 'poin_c',
-                                ques['opsi_d']: 'poin_d'
+                                ques['opsi_d']: 'poin_d',
+                                ques['opsi_e']: 'poin_e' # Baris krusial!
                             }
-        
-                            # 2. Ambil nama kolom poin yang sesuai
+                
                             kolom_poin = mapping_opsi.get(user_ans)
-        
-                            # 3. Ambil nilai poin dari database (default 0 jika data tidak ada)
                             poin_didapat = ques.get(kolom_poin, 0)
-        
-                            # 4. Tambahkan ke kategori masing-masing
+                
                             if kat in skor:
                                 skor[kat] += poin_didapat
                     
@@ -351,6 +355,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
