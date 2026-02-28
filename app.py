@@ -28,10 +28,10 @@ if saved_token and st.session_state.user is None:
     try:
         # Melakukan verifikasi token langsung ke Supabase
         res = supabase.auth.get_user(saved_token)
-        if res.user: # penambahan-baru-1
+        if res.user: # penambahan-baru
             st.session_state.user = res.user
             # Memastikan variabel waktu sudah ada agar kuis tidak error
-            if 'start_time' not in st.session_state: st.session_state.start_time = time.time() # penambahan-baru-1
+            if 'start_time' not in st.session_state: st.session_state.start_time = time.time() # penambahan-baru
             st.rerun() # Langsung lompat ke dashboard
     except:
         controller.remove('supabase_token')
@@ -43,9 +43,9 @@ if st.session_state.user is None:
     
     with tab_masuk:
         with st.form("form_login"):
-            # Memberikan placeholder dan help agar browser lebih mudah mendeteksi kolom kredensial
-            email_input = st.text_input("Email", placeholder="nama@email.com", help="Simpan email ini di browser untuk pengisian otomatis.") # ganti-baris-1
-            pass_input = st.text_input("Password", type="password", help="Gunakan password yang kuat dan simpan di pengelola sandi browser Anda.") # ganti-baris-1
+            # Memberikan placeholder, help, dan KEY statis agar browser konsisten mendeteksi kolom kredensial
+            email_input = st.text_input("Email", placeholder="nama@email.com", help="Simpan email ini di browser untuk pengisian otomatis.", key="autofill_email") # ganti-baris-1
+            pass_input = st.text_input("Password", type="password", help="Gunakan password yang kuat dan simpan di pengelola sandi browser Anda.", key="autofill_pass") # ganti-baris-1
             
             # Menambah opsi agar user secara sadar mengaktifkan fitur pengingat sesi
             remember_me = st.checkbox("Ingat Saya (Auto-Login 7 Hari)", value=True) # ganti-baris-1
@@ -61,16 +61,16 @@ if st.session_state.user is None:
                         controller.set('supabase_token', res.session.access_token) # penambahan-baru-1
                         
                     st.session_state.start_time = time.time()
-                    st.success("Login Berhasil! Mengalihkan...") # penambahan-baru-1
-                    time.sleep(0.5) # penambahan-baru-1
+                    st.success("Login Berhasil! Browser akan menawarkan simpan sandi.") # penambahan-baru-1
+                    time.sleep(1) # penambahan-baru-1 (Memberi waktu browser memicu pop-up autofill)
                     st.rerun()
                 except Exception as e:
                     st.error(f"Gagal: {e}")
                     
     with tab_daftar:
         with st.form("form_daftar"):
-            ne = st.text_input("Email Baru")
-            np = st.text_input("Password (min 6 karakter)", type="password")
+            ne = st.text_input("Email Baru", key="reg_email") # penambahan-baru-1
+            np = st.text_input("Password (min 6 karakter)", type="password", key="reg_pass") # penambahan-baru-1
             if st.form_submit_button("Buat Akun"):
                 try:
                     supabase.auth.sign_up({"email": ne, "password": np})
@@ -147,5 +147,6 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
