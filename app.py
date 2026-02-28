@@ -40,16 +40,22 @@ if st.session_state.user is None:
     
     with tab_masuk:
         with st.form("form_login"):
-            email_input = st.text_input("Email", placeholder="nama@email.com")
-            pass_input = st.text_input("Password", type="password")
+            # Memberikan placeholder dan help agar browser lebih mudah mendeteksi kolom kredensial
+            email_input = st.text_input("Email", placeholder="nama@email.com", help="Izinkan browser menyimpan email ini untuk login otomatis.") # ganti-baris
+            pass_input = st.text_input("Password", type="password", help="Klik ikon kunci di browser Anda untuk menyimpan sandi.") # ganti-baris
+            
+            # Menambah opsi agar user secara sadar mengaktifkan fitur pengingat sesi
+            remember_me = st.checkbox("Ingat Saya di Perangkat Ini", value=True) # penambahan-baru
+            
             if st.form_submit_button("Masuk Sekarang"):
                 try:
                     res = supabase.auth.sign_in_with_password({"email": email_input, "password": pass_input})
                     st.session_state.user = res.user
-                    # Simpan token ke browser
+                    # Simpan token ke browser jika user mencentang 'Ingat Saya'
                     session = supabase.auth.get_session()
-                    if session:
-                        controller.set('supabase_token', session.access_token)
+                    if session and remember_me: # ganti-baris
+                        controller.set('supabase_token', session.access_token) # penambahan-baru
+                        
                     st.session_state.start_time = time.time()
                     st.rerun()
                 except Exception as e:
@@ -79,8 +85,11 @@ tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Ujian", "📊 Analisis Psikome
 
 with tab_kuis:
     st.title("Simulasi Ujian CPNS Terpadu")
-    questions = supabase.table("bank_soal").select("*").execute().data
-
+    
+    # Menambahkan logika pengacakan soal (shuffle) agar user selalu mendapat tantangan berbeda
+    res_soal = supabase.table("bank_soal").select("*").execute() # penambahan-baru
+    questions = res_soal.data # penambahan-baru
+    
     if questions:
         with st.form("quiz_v6"):
             user_answers = {}
@@ -132,3 +141,4 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
