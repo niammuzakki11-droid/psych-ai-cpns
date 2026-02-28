@@ -136,15 +136,17 @@ with tab_kuis:
                 st.balloons()
     else:
         st.warning("Belum ada soal.")
-            
+
 with tab_progres:
     st.title("📊 Analisis Psikometri Mendalam")
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
+        # Membersihkan data dari nilai NULL agar tidak error saat dihitung
         df_clean = df.dropna(subset=['skor_tiu', 'skor_twk', 'skor_tkp'])
-                if not df_clean.empty:
+        
+        if not df_clean.empty: # <--- PERBAIKAN SPASI DI SINI (Line 147)
             latest = df_clean.iloc[-1]
             
             # --- 1. DATA UNTUK GRAFIK ---
@@ -161,11 +163,12 @@ with tab_progres:
                          color_discrete_map={'Skor Anda': '#1E88E5', 'Target BKN': '#FF5252'},
                          title="Perbandingan Skor Terakhir vs Ambang Batas BKN")
             
-            # --- KUNCI GRAFIK (LOCK AXIS) ---
+            # --- FITUR KUNCI GRAFIK (LOCK AXIS) ---
             fig.update_layout(
-                yaxis_range=[0, 200],  # MENGUNCI skala Y dari 0 sampai 200 (Agar tidak lompat)
-                xaxis={'categoryorder':'array', 'categoryarray':['TIU','TWK','TKP']}, # MENGUNCI urutan X
-                dragmode=False,        # Mematikan fitur zoom agar user tidak sengaja menggeser
+                yaxis_range=[0, 200],  # Mengunci skala 0-200 agar tidak lompat-lompat
+                xaxis={'categoryorder':'array', 'categoryarray':['TIU','TWK','TKP']},
+                dragmode=False,        # Mematikan zoom agar grafik tidak rusak saat di-scroll
+                hovermode="x unified"
             )
             
             st.plotly_chart(fig, use_container_width=True)
@@ -177,7 +180,7 @@ with tab_progres:
             if latest['skor_tiu'] >= PASSING_TIU and \
                latest['skor_twk'] >= PASSING_TWK and \
                latest['skor_tkp'] >= PASSING_TKP:
-                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas.")
+                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas BKN.")
                 st.balloons()
             else:
                 st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
@@ -194,14 +197,13 @@ with tab_progres:
             weakest = min(scores, key=scores.get)
             
             if weakest == 'TIU':
-                st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda ({latest['skor_tiu']}) masih jauh dari {PASSING_TIU}.")
+                st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda masih di bawah {PASSING_TIU}.")
             elif weakest == 'TWK':
                 st.warning(f"⚠️ **Prioritas:** Perdalam Sejarah & Pancasila. Target TWK adalah {PASSING_TWK}.")
             else:
                 st.info(f"⚠️ **Prioritas:** Tingkatkan Kepribadian Profesional. Anda butuh {PASSING_TKP} di TKP.")
     else:
-        st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")
-        
+        st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
 # --- SIDEBAR LEADERBOARD ---
 st.sidebar.markdown("---")
@@ -209,6 +211,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
