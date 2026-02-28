@@ -160,9 +160,10 @@ with tab_kuis:
                                                 [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']], 
                                                 key=f"q_{q['id']}", label_visibility="collapsed")
                 st.markdown("---")
-            
+
+
             if st.form_submit_button("KIRIM JAWABAN"):
-                # HITUNG SKOR & FIX INSERT (Sertakan durasi_detik)
+                # HITUNG SKOR
                 skor_det = {"TIU": 0, "TWK": 0, "TKP": 0}
                 for q in st.session_state.test_questions:
                     if user_answers.get(q['id']) == q['jawaban_benar']:
@@ -170,21 +171,26 @@ with tab_kuis:
                 
                 durasi_akhir = round(time.time() - st.session_state.start_time, 2)
                 
-                # Pengiriman data ke database
-                supabase.table("user_scores").insert({
-                    "nama_user": st.session_state.user.email,
-                    "skor_total": sum(skor_det.values()),
-                    "skor_tiu": skor_det["TIU"],
-                    "skor_twk": skor_det["TWK"],
-                    "skor_tkp": skor_det["TKP"],
-                    "total_soal": len(st.session_state.test_questions),
-                    "durasi_detik": durasi_akhir # WAJIB ADA AGAR TIDAK APIError
-                }).execute()
-                
-                st.session_state.test_active = False
-                st.session_state.submitted = True
-                st.session_state.final_answers = user_answers
-                st.rerun()
+                try:
+                    # Pastikan nama kolom di bawah ini SAMA PERSIS dengan di Supabase
+                    supabase.table("user_scores").insert({
+                        "nama_user": st.session_state.user.email,
+                        "skor_total": sum(skor_det.values()),
+                        "skor_tiu": skor_det["TIU"],
+                        "skor_twk": skor_det["TWK"],
+                        "skor_tkp": skor_det["TKP"],
+                        "total_soal": len(st.session_state.test_questions),
+                        "durasi_detik": durasi_akhir
+                    }).execute()
+                    
+                    st.session_state.test_active = False
+                    st.session_state.submitted = True
+                    st.session_state.final_answers = user_answers
+                    st.rerun()
+                except Exception as e:
+                    # Ini akan memunculkan detail error jika Supabase menolak data
+                    st.error(f"Gagal Simpan ke Database: {e}")
+                    st.info("Cek apakah ada kolom di Supabase yang 'Not Null' tapi belum masuk di sini.")
 
     # --- KONDISI TAMPILAN REVIEW (SETELAH SELESAI) ---
     elif st.session_state.submitted:
@@ -276,6 +282,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
