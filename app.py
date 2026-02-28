@@ -134,6 +134,8 @@ with tab_progres:
     
     if res.data:
         df = pd.DataFrame(res.data)
+
+        # 1. Tampilkan Grafik (Seperti Versi 6.2)
         # Visualisasi rata-rata skor per kategori
         avg_scores = df[['skor_tiu', 'skor_twk', 'skor_tkp']].mean().reset_index()
         avg_scores.columns = ['Kategori', 'Skor']
@@ -141,32 +143,62 @@ with tab_progres:
     else:
         st.info("Belum ada data.")
 
-        # --- MASUKKAN KODE AI STUDY PATH DI SINI ---
-        st.markdown("---")
-        st.subheader("🤖 AI Study Path Recommendation")
+        # 2. Ambil Data Tes Terbaru untuk Evaluasi
+        # Kita gunakan dropna agar tidak error jika ada data NULL di baris lama
+        df_clean = df.dropna(subset=['skor_tiu', 'skor_twk', 'skor_tkp'])
+        
+        if not df_clean.empty:
+            latest_test = df_clean.iloc[-1] 
 
-        # Mengambil data tes terakhir (baris paling bawah di database)
-        latest_test = df.iloc[-1] 
+            st.markdown("---")
+            st.subheader("📋 Hasil Evaluasi Ambang Batas")
 
-        # Logika mencari skor terendah
-        scores_only = {
-            'TIU (Intelegensia)': latest_test['skor_tiu'],
-            'TWK (Wawasan)': latest_test['skor_twk'],
-            'TKP (Kepribadian)': latest_test['skor_tkp']
-        }
-        # Mencari kategori mana yang nilainya paling kecil
-        weakest_category = min(scores_only, key=scores_only.get)
+            # --- MASUKKAN KODE AMBANG BATAS DI SINI ---
+            pass_tiu, pass_twk, pass_tkp = 80, 65, 166 # Standar Resmi
 
-        # Menampilkan saran berdasarkan hasil analisis
-        if weakest_category == 'TIU (Intelegensia)':
-            st.error(f"⚠️ **Prioritas Belajar:** {weakest_category}")
-            st.write("Analisis AI menunjukkan hambatan pada logika numerik. Perbanyak latihan deret angka.")
-        elif weakest_category == 'TWK (Wawasan)':
-            st.warning(f"⚠️ **Prioritas Belajar:** {weakest_category}")
-            st.write("Fokus pada pemahaman nilai-nilai Pancasila dan sejarah konstitusi.")
-        else:
-            st.success(f"⚠️ **Prioritas Belajar:** {weakest_category}")
-            st.write("Skor kepribadianmu perlu ditingkatkan dalam aspek profesionalisme.")
+            if latest_test['skor_tiu'] >= pass_tiu and \
+               latest_test['skor_twk'] >= pass_twk and \
+               latest_test['skor_tkp'] >= pass_tkp:
+                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas CPNS.")
+                st.balloons()
+            else:
+                # Ini yang memunculkan pesan di screenshot kamu kemarin
+                st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.") 
+                
+                # Detail kategori yang tidak lulus
+                if latest_test['skor_tiu'] < pass_tiu:
+                    st.write(f"❌ **TIU:** {latest_test['skor_tiu']} (Butuh {pass_tiu})")
+                if latest_test['skor_twk'] < pass_twk:
+                    st.write(f"❌ **TWK:** {latest_test['skor_twk']} (Butuh {pass_twk})")
+                if latest_test['skor_tkp'] < pass_tkp:
+                    st.write(f"❌ **TKP:** {latest_test['skor_tkp']} (Butuh {pass_tkp})")
+
+           # 3. AI Study Path (Rekomendasi Belajar)
+           st.markdown("---")
+           st.subheader("🤖 AI Study Path Recommendation")
+
+           # Mengambil data tes terakhir (baris paling bawah di database)
+           latest_test = df.iloc[-1] 
+
+           # Logika mencari skor terendah
+           scores_only = {
+               'TIU (Intelegensia)': latest_test['skor_tiu'],
+              'TWK (Wawasan)': latest_test['skor_twk'],
+               'TKP (Kepribadian)': latest_test['skor_tkp']
+           }
+           # Mencari kategori mana yang nilainya paling kecil
+           weakest_category = min(scores_only, key=scores_only.get)
+
+           # Menampilkan saran berdasarkan hasil analisis
+           if weakest_category == 'TIU (Intelegensia)':
+               st.error(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+               st.write("Analisis AI menunjukkan hambatan pada logika numerik. Perbanyak latihan deret angka.")
+           elif weakest_category == 'TWK (Wawasan)':
+               st.warning(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+               st.write("Fokus pada pemahaman nilai-nilai Pancasila dan sejarah konstitusi.")
+          else:
+               st.success(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+               st.write("Skor kepribadianmu perlu ditingkatkan dalam aspek profesionalisme.")
             
 
 # --- SIDEBAR LEADERBOARD ---
@@ -175,3 +207,4 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
