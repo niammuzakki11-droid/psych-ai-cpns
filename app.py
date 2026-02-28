@@ -22,19 +22,28 @@ supabase = create_client(url, key)
 
 st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
-# --- AUTO LOGIN CHECK (Dilakukan sebelum menggambar UI) ---
-saved_token = controller.get('supabase_token')
+# --- LOGIKA AUTO-LOGIN YANG AMAN ---
+# 1. Ambil token (kunci) dari laci browser
+saved_token = controller.get('supabase_token') 
+
+# 2. Jika ada kunci dan kita belum login di sesi ini
 if saved_token and st.session_state.user is None:
     try:
-        # Melakukan verifikasi token langsung ke Supabase
+        # Tanyakan ke Supabase: "Kunci ini milik siapa?"
         res = supabase.auth.get_user(saved_token)
-        if res.user: # penambahan-baru-1
+        if res.user:
+            # Jika Supabase kenal, barulah kita simpan data user lengkapnya
             st.session_state.user = res.user
-            # Memastikan variabel waktu sudah ada agar kuis tidak error
-            if 'start_time' not in st.session_state: st.session_state.start_time = time.time() # penambahan-baru-1
-            st.rerun() # Langsung lompat ke dashboard
-    except:
+            
+            # Pastikan timer sudah ada agar kuis tidak error
+            if 'start_time' not in st.session_state:
+                st.session_state.start_time = time.time()
+                
+            st.rerun() # Refresh agar dashboard muncul
+    except Exception:
+        # Jika kunci rusak atau kadaluarsa, buang saja kuncinya
         controller.remove('supabase_token')
+        
 
 # --- GERBANG MASUK (LOGIN & REGISTER) ---
 if st.session_state.user is None:
@@ -207,4 +216,5 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
