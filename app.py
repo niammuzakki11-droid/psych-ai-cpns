@@ -435,9 +435,9 @@ with tab_progres:
                         mime="application/pdf",
                         key="btn_download_unique", # Tambahkan KEY unik di sini
                         use_container_width=True
-        )
-except Exception as e:
-    st.error(f"Gagal menyiapkan file PDF: {e}")
+                        )
+                except Exception as e:
+                    st.error(f"Gagal menyiapkan file PDF: {e}")
     else:
         st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
@@ -447,4 +447,5 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
