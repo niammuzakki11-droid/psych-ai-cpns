@@ -196,16 +196,7 @@ with tab_kuis:
         opsi_label = ['A', 'B', 'C', 'D', 'E']
         options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
         old_ans = st.session_state.user_answers.get(q['id'])
-        
-        ans = st.radio(
-            "Pilih Jawaban:", 
-            options, 
-            index=options.index(old_ans) if old_ans in options else None, 
-            key=f"q_{q['id']}",
-            format_func=lambda x: f"{opsi_label[options.index(x)]}. {x}"
-        )
-        if ans: st.session_state.user_answers[q['id']] = ans
-           
+                   
         # 4. TOMBOL KONTROL BAWAH
         st.write("")
         c1, c2, c3 = st.columns(3)
@@ -342,11 +333,8 @@ with tab_progres:
             with col1: st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
             with col2: st.metric("Skor TWK", latest['skor_twk'], f"Target {PASSING_TWK}")
             with col3: st.metric("Skor TKP", latest['skor_tkp'], f"Target {PASSING_TKP}")
-
-    else:
-        st.info("Belum ada data kuis. Selesaikan simulasi pertama kamu untuk melihat analisis!")
             
-            # --- 2. EVALUASI AMBANG BATAS ---
+            # --- 4. EVALUASI AMBANG BATAS ---
             st.markdown("---")
             st.subheader("📋 Status Kelulusan Terakhir")
             
@@ -363,9 +351,9 @@ with tab_progres:
             with col2: st.metric("TWK", latest['skor_twk'], f"Min {PASSING_TWK}")
             with col3: st.metric("TKP", latest['skor_tkp'], f"Min {PASSING_TKP}")
 
-            # --- 3. AI STUDY PATH ---
+            # --- 5.  STUDY PATH ---
             st.markdown("---")
-            st.subheader("🤖 AI Study Path Recommendation")
+            st.subheader("🤖 Study Path Recommendation")
             scores = {'TIU': latest['skor_tiu'], 'TWK': latest['skor_twk'], 'TKP': latest['skor_tkp']}
             weakest = min(scores, key=scores.get)
             
@@ -384,6 +372,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
