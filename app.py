@@ -144,25 +144,29 @@ with tab_progres:
     if res.data:
         df = pd.DataFrame(res.data)
         df_clean = df.dropna(subset=['skor_tiu', 'skor_twk', 'skor_tkp'])
-        
-        if not df_clean.empty:
+                if not df_clean.empty:
             latest = df_clean.iloc[-1]
             
-            # --- 1. GRAFIK PRO: SKOR VS AMBANG BATAS ---
-            # Kita buat data perbandingan untuk grafik
+            # --- 1. DATA UNTUK GRAFIK ---
             chart_data = pd.DataFrame({
                 'Kategori': ['TIU', 'TWK', 'TKP'],
                 'Skor Anda': [latest['skor_tiu'], latest['skor_twk'], latest['skor_tkp']],
                 'Target BKN': [PASSING_TIU, PASSING_TWK, PASSING_TKP]
             })
             
-            # Melakukan "melt" agar data bisa ditampilkan berdampingan oleh Plotly
             df_plot = chart_data.melt(id_vars='Kategori', var_name='Tipe', value_name='Nilai')
             
             fig = px.bar(df_plot, x='Kategori', y='Nilai', color='Tipe', 
-                         barmode='group', # Berdampingan
+                         barmode='group',
                          color_discrete_map={'Skor Anda': '#1E88E5', 'Target BKN': '#FF5252'},
                          title="Perbandingan Skor Terakhir vs Ambang Batas BKN")
+            
+            # --- KUNCI GRAFIK (LOCK AXIS) ---
+            fig.update_layout(
+                yaxis_range=[0, 200],  # MENGUNCI skala Y dari 0 sampai 200 (Agar tidak lompat)
+                xaxis={'categoryorder':'array', 'categoryarray':['TIU','TWK','TKP']}, # MENGUNCI urutan X
+                dragmode=False,        # Mematikan fitur zoom agar user tidak sengaja menggeser
+            )
             
             st.plotly_chart(fig, use_container_width=True)
 
@@ -205,6 +209,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
