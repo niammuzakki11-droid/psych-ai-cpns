@@ -56,14 +56,33 @@ if st.session_state.user is None:
     # Menggunakan Tabs agar rapi dan tidak saling tindih
     tab_masuk, tab_daftar = st.tabs(["🔑 Login Member", "📝 Daftar Akun Baru"])
     
-    with tab_masuk:
+   with tab_masuk:
         with st.form("form_login"):
             email_input = st.text_input("Email", placeholder="nama@email.com")
             pass_input = st.text_input("Password", type="password")
             submit_l = st.form_submit_button("Masuk Sekarang")
+            
             if submit_l:
                 if email_input and pass_input:
-                    handle_login(email_input, pass_input)
+                    try:
+                        # 1. Eksekusi Login
+                        res = supabase.auth.sign_in_with_password({
+                            "email": email_input, 
+                            "password": pass_input
+                        })
+                        st.session_state.user = res.user
+                        
+                        # 2. Simpan Cookie (Remember Me)
+                        session = supabase.auth.get_session()
+                        if session:
+                            # Simpan token, bukan password, agar aman!
+                            controller.set('supabase_token', session.access_token)
+                        
+                        st.session_state.start_time = time.time()
+                        st.success("Login Berhasil!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Email atau Password salah: {e}")
                 else:
                     st.warning("Mohon isi email dan password.")
                     
@@ -98,14 +117,7 @@ if saved_token and st.session_state.user is None:
         # Jika token kadaluarsa, hapus cookie agar tidak error terus
         controller.remove('supabase_token')
         
-# Saat login berhasil, simpan ke cookie
-if submit_l:
-    # ... proses login sukses ...
-    controller.set('user_email', email_input) # Simpan email ke browser
 
-# Di dalam bagian "if submit_l:" setelah login berhasil
-session = supabase.auth.get_session()
-controller.set('supabase_token', session.access_token)
 
 # --- HALAMAN UTAMA MEMBER ---
 st.sidebar.info(f"👤 {st.session_state.user.email}")
@@ -188,5 +200,6 @@ if res_leaderboard.data:
     df_leader = pd.DataFrame(res_leaderboard.data)
     # Menampilkan tabel tanpa index agar lebih rapi
     st.sidebar.table(df_leader)
+
 
 
