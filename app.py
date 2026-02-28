@@ -99,22 +99,22 @@ if st.sidebar.button("Logout"):
 tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Ujian", "📊 Analisis Psikometri"])
 
 with tab_kuis:
-    # 1. INISIALISASI STATE NAVIGASI CAT
+    # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
     if 'current_idx' not in st.session_state: st.session_state.current_idx = 0
     if 'user_answers' not in st.session_state: st.session_state.user_answers = {}
     if 'ragu_ragu' not in st.session_state: st.session_state.ragu_ragu = {}
 
-    # --- KONDISI A: HALAMAN AWAL (GERBANG MASUK) ---
-    if not st.session_state.test_active and not st.session_state.submitted:
-        st.title("🛡️ Simulasi CAT SKD Resmi")
+    # --- KONDISI A: HALAMAN AWAL (TOMBOL MULAI) ---
+    if not st.session_state.get('test_active') and not st.session_state.get('submitted'):
+        st.title("🛡️ CAT SKD CPNS - Simulasi Resmi")
         st.info(f"""
-        **Ketentuan Ujian:**
-        - **Total Soal:** 110 Soal (TWK: 30, TIU: 35, TKP: 45)
-        - **Waktu:** 100 Menit (Auto-Stop)
-        - **Sistem:** Tidak ada nilai minus untuk jawaban salah.
+        **Struktur Tes SKD:**
+        - **TWK**: 30 Soal | **TIU**: 35 Soal | **TKP**: 45 Soal
+        - **Waktu**: 100 Menit (Sistem akan berhenti otomatis)
+        - **Passing Grade**: TWK ({PASSING_TWK}), TIU ({PASSING_TIU}), TKP ({PASSING_TKP})
         """)
         
-        if st.button("🚀 MULAI SIMULASI SEKARANG", use_container_width=True):
+        if st.button("🚀 MULAI SESI UJIAN", use_container_width=True):
             res_soal = supabase.table("bank_soal").select("*").execute()
             if res_soal.data:
                 df_all = pd.DataFrame(res_soal.data)
@@ -122,7 +122,7 @@ with tab_kuis:
                     df_kat = df_all[df_all['kategori'].str.upper() == kat.upper()]
                     return df_kat.sample(n=min(len(df_kat), jml)).to_dict('records')
 
-                # Susun soal sesuai urutan resmi
+                # Pengambilan soal sesuai rasio resmi BKN
                 st.session_state.test_questions = ambil_acak('TWK', 30) + \
                                                   ambil_acak('TIU', 35) + \
                                                   ambil_acak('TKP', 45)
@@ -130,85 +130,109 @@ with tab_kuis:
                 st.session_state.start_time = time.time()
                 st.rerun()
 
-    # --- KONDISI B: MODE UJIAN AKTIF (NAVIGASI SATU PER SATU) ---
-    elif st.session_state.test_active:
-        # 1. TIMER & HEADER
+    # --- KONDISI B: MODE UJIAN AKTIF (SISTEM NAVIGASI) ---
+    elif st.session_state.get('test_active'):
+        # 1. TIMER & IDENTITAS
         sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
         if sisa_waktu <= 0:
             st.session_state.test_active = False
             st.session_state.submitted = True
             st.rerun()
 
-        col_h1, col_h2 = st.columns([3, 1])
-        with col_h1: st.write(f"👤 **Peserta:** {st.session_state.user.email}")
-        with col_h2: st.error(f"⏳ **{sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}**")
+        st.sidebar.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
+        st.write(f"👤 **Peserta:** {st.session_state.user.email}")
 
-        # 2. GRID NAVIGASI (NOMOR 1-110)
-        st.markdown("### Navigasi Nomor")
-        grid_cols = st.columns(11) # 10 kolom per baris
-        for i in range(len(st.session_state.test_questions)):
-            q_id = st.session_state.test_questions[i]['id']
-            # Logika Warna: Kuning (Ragu), Biru (Terisi), Putih (Kosong)
-            if st.session_state.ragu_ragu.get(q_id): color = "primary"
-            elif q_id in st.session_state.user_answers: color = "secondary"
-            else: color = "outline"
-            
-            if grid_cols[i % 11].button(f"{i+1}", key=f"nav_{i}", use_container_width=True, type=color):
-                st.session_state.current_idx = i
-                st.rerun()
+        # 2. NAVIGASI NOMOR (Perbaikan Grid agar tidak Error)
+        st.markdown("### Navigasi Soal")
+        n_soal = len(st.session_state.test_questions)
+        for row_start in range(0, n_soal, 10): # Membuat baris per 10 nomor
+            cols = st.columns(10)
+            for i in range(10):
+                idx = row_start + i
+                if idx < n_soal:
+                    q_id = st.session_state.test_questions[idx]['id']
+                    # Logika warna tombol navigasi
+                    btn_type = "secondary" if q_id in st.session_state.user_answers else "outline"
+                    if st.session_state.ragu_ragu.get(q_id):
+                        label = f"⚠️ {idx+1}" # Tanda Ragu-ragu
+                    else:
+                        label = f"{idx+1}"
+                    
+                    if cols[i].button(label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
+                        st.session_state.current_idx = idx
+                        st.rerun()
 
         st.divider()
 
-        # 3. AREA PERTANYAAN
-        idx = st.session_state.current_idx
-        q = st.session_state.test_questions[idx]
-        st.subheader(f"Soal Nomor {idx + 1}")
+        # 3. AREA SOAL
+        q = st.session_state.test_questions[st.session_state.current_idx]
+        st.subheader(f"Soal Nomor {st.session_state.current_idx + 1}")
         st.markdown(f"**Kategori:** {q['kategori'].upper()}")
         st.write(q['pertanyaan'])
 
         options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']]
         old_ans = st.session_state.user_answers.get(q['id'])
         
-        # Radio button untuk pilihan jawaban
-        new_ans = st.radio(
-            "Pilih Jawaban:", options, 
-            index=options.index(old_ans) if old_ans in options else None,
-            key=f"cat_q_{q['id']}"
-        )
-        if new_ans: st.session_state.user_answers[q['id']] = new_ans # Auto-save
+        # Radio button dengan index=None agar tidak terpilih otomatis
+        ans = st.radio("Jawaban:", options, index=options.index(old_ans) if old_ans in options else None, key=f"q_{q['id']}")
+        if ans: st.session_state.user_answers[q['id']] = ans
 
-        # 4. TOMBOL NAVIGASI BAWAH
+        # 4. TOMBOL KONTROL BAWAH
         st.write("")
-        c1, c2, c3 = st.columns([1, 1, 1])
+        c1, c2, c3 = st.columns(3)
         with c1:
-            if idx > 0 and st.button("⬅️ Sebelumnya"):
-                st.session_state.current_idx -= 1
-                st.rerun()
+            if st.session_state.current_idx > 0:
+                if st.button("⬅️ Sebelumnya"):
+                    st.session_state.current_idx -= 1
+                    st.rerun()
         with c2:
-            # FITUR RAGU-RAGU
-            ragu = st.checkbox("Ragu-Ragu", value=st.session_state.ragu_ragu.get(q['id'], False), key=f"chk_{q['id']}")
-            st.session_state.ragu_ragu[q['id']] = ragu
+            is_ragu = st.checkbox("Ragu-Ragu", value=st.session_state.ragu_ragu.get(q['id'], False), key=f"rg_{q['id']}")
+            st.session_state.ragu_ragu[q['id']] = is_ragu
         with c3:
-            if idx < len(st.session_state.test_questions) - 1:
+            if st.session_state.current_idx < n_soal - 1:
                 if st.button("Simpan & Lanjutkan ➡️"):
                     st.session_state.current_idx += 1
                     st.rerun()
             else:
-                if st.button("🏁 SELESAI UJIAN"):
+                if st.button("🏁 SELESAI UJIAN", type="primary"):
+                    # --- LOGIKA HITUNG SKOR AKHIR ---
+                    skor = {"TWK": 0, "TIU": 0, "TKP": 0}
+                    for ques in st.session_state.test_questions:
+                        user_ans = st.session_state.user_answers.get(ques['id'])
+                        kat = ques['kategori'].upper()
+                        if user_ans == ques['jawaban_benar']:
+                            skor[kat] += 5
+                    
+                    # Simpan ke Supabase
+                    supabase.table("user_scores").insert({
+                        "nama_user": st.session_state.user.email,
+                        "skor_total": sum(skor.values()),
+                        "skor_tiu": skor["TIU"], "skor_twk": skor["TWK"], "skor_tkp": skor["TKP"],
+                        "total_soal": n_soal,
+                        "durasi_detik": round(time.time() - st.session_state.start_time)
+                    }).execute()
+                    
                     st.session_state.test_active = False
                     st.session_state.submitted = True
                     st.rerun()
 
-    # --- KONDISI C: HALAMAN HASIL & REVIEW ---
-    elif st.session_state.submitted:
-        # (Satu paket dengan logika skor yang sudah kamu miliki sebelumnya)
-        st.title("🏁 Hasil Ujian Selesai")
-        # Masukkan kembali logika kalkulasi skor TIU, TWK, TKP di sini
-        if st.button("Ulangi Simulasi"):
+    # --- KONDISI C: HASIL & PEMBAHASAN ---
+    elif st.session_state.get('submitted'):
+        st.success("🎉 Simulasi Selesai! Skor Anda telah tercatat.")
+        if st.button("🔄 Ulangi Simulasi Baru"):
             st.session_state.submitted = False
             st.session_state.user_answers = {}
             st.session_state.ragu_ragu = {}
+            st.session_state.current_idx = 0
             st.rerun()
+            
+        st.subheader("📝 Review & Pembahasan")
+        for q in st.session_state.test_questions:
+            with st.expander(f"Soal {q['id']} - {q['kategori'].upper()}"):
+                st.write(f"**Pertanyaan:** {q['pertanyaan']}")
+                st.write(f"**Jawaban Anda:** {st.session_state.user_answers.get(q['id'], 'Tidak dijawab')}")
+                st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
+                st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
                 
 with tab_progres:
     st.title("📊 Analisis Psikometri Mendalam")
@@ -287,6 +311,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
