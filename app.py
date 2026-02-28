@@ -4,6 +4,10 @@ import pandas as pd
 import plotly.express as px
 import time
 
+# Letakkan ini di baris pertama setelah import
+if 'user' not in st.session_state:
+    st.session_state.user = None
+
 # 1. KONEKSI INFRASTRUKTUR
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -76,6 +80,32 @@ if st.session_state.user is None:
     
     # Berhenti di sini jika belum login (PENTING: Jangan taruh st.stop() di dalam tab)
     st.stop()
+
+from streamlit_cookies_controller import CookieController
+
+controller = CookieController()
+
+# --- CEK COOKIE UNTUK AUTO-LOGIN ---
+saved_token = controller.get('supabase_token')
+
+if saved_token and st.session_state.user is None:
+    try:
+        # Gunakan token yang tersimpan untuk memulihkan sesi
+        res = supabase.auth.get_user(saved_token)
+        st.session_state.user = res.user
+        st.rerun()
+    except:
+        # Jika token kadaluarsa, hapus cookie agar tidak error terus
+        controller.remove('supabase_token')
+        
+# Saat login berhasil, simpan ke cookie
+if submit_l:
+    # ... proses login sukses ...
+    controller.set('user_email', email_input) # Simpan email ke browser
+
+# Di dalam bagian "if submit_l:" setelah login berhasil
+session = supabase.auth.get_session()
+controller.set('supabase_token', session.access_token)
 
 # --- HALAMAN UTAMA MEMBER ---
 st.sidebar.info(f"👤 {st.session_state.user.email}")
@@ -158,4 +188,5 @@ if res_leaderboard.data:
     df_leader = pd.DataFrame(res_leaderboard.data)
     # Menampilkan tabel tanpa index agar lebih rapi
     st.sidebar.table(df_leader)
+
 
