@@ -56,7 +56,7 @@ if st.session_state.user is None:
     # Menggunakan Tabs agar rapi dan tidak saling tindih
     tab_masuk, tab_daftar = st.tabs(["🔑 Login Member", "📝 Daftar Akun Baru"])
     
-   with tab_masuk:
+    with tab_masuk:
         with st.form("form_login"):
             email_input = st.text_input("Email", placeholder="nama@email.com")
             pass_input = st.text_input("Password", type="password")
@@ -200,6 +200,7 @@ if res_leaderboard.data:
     df_leader = pd.DataFrame(res_leaderboard.data)
     # Menampilkan tabel tanpa index agar lebih rapi
     st.sidebar.table(df_leader)
+
 
 
 
