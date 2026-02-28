@@ -122,7 +122,7 @@ with tab_kuis:
                     df_kat = df_all[df_all['kategori'].str.upper() == kat.upper()]
                     return df_kat.sample(n=min(len(df_kat), jml)).to_dict('records')
 
-                # Pengambilan soal sesuai rasio resmi BKN
+                # Urutan resmi sesuai CAT BKN
                 st.session_state.test_questions = ambil_acak('TWK', 30) + \
                                                   ambil_acak('TIU', 35) + \
                                                   ambil_acak('TKP', 45)
@@ -132,7 +132,7 @@ with tab_kuis:
 
     # --- KONDISI B: MODE UJIAN AKTIF (SISTEM NAVIGASI) ---
     elif st.session_state.get('test_active'):
-        # 1. TIMER & IDENTITAS
+        # 1. TIMER & HEADER
         sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
         if sisa_waktu <= 0:
             st.session_state.test_active = False
@@ -142,23 +142,25 @@ with tab_kuis:
         st.sidebar.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
         st.write(f"👤 **Peserta:** {st.session_state.user.email}")
 
-        # 2. NAVIGASI NOMOR (Perbaikan Grid agar tidak Error)
+        # 2. GRID NAVIGASI (Perbaikan Layout & Tipe Tombol)
         st.markdown("### Navigasi Soal")
         n_soal = len(st.session_state.test_questions)
-        for row_start in range(0, n_soal, 10): # Membuat baris per 10 nomor
+        for row_start in range(0, n_soal, 10): 
             cols = st.columns(10)
             for i in range(10):
                 idx = row_start + i
                 if idx < n_soal:
                     q_id = st.session_state.test_questions[idx]['id']
-                    # Logika warna tombol navigasi
-                    btn_type = "secondary" if q_id in st.session_state.user_answers else "outline"
-                    if st.session_state.ragu_ragu.get(q_id):
-                        label = f"⚠️ {idx+1}" # Tanda Ragu-ragu
-                    else:
-                        label = f"{idx+1}"
                     
-                    if cols[i].button(label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
+                    # LOGIKA WARNA TOMBOL
+                    if st.session_state.ragu_ragu.get(q_id):
+                        btn_label, btn_type = f"⚠️ {idx+1}", "primary" # Kuning/Highlight
+                    elif q_id in st.session_state.user_answers:
+                        btn_label, btn_type = f"{idx+1}", "secondary" # Biru/Terisi
+                    else:
+                        btn_label, btn_type = f"{idx+1}", "secondary" # Default (Tidak Error)
+                    
+                    if cols[i].button(btn_label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
                         st.session_state.current_idx = idx
                         st.rerun()
 
@@ -173,7 +175,6 @@ with tab_kuis:
         options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d']]
         old_ans = st.session_state.user_answers.get(q['id'])
         
-        # Radio button dengan index=None agar tidak terpilih otomatis
         ans = st.radio("Jawaban:", options, index=options.index(old_ans) if old_ans in options else None, key=f"q_{q['id']}")
         if ans: st.session_state.user_answers[q['id']] = ans
 
@@ -201,7 +202,7 @@ with tab_kuis:
                         user_ans = st.session_state.user_answers.get(ques['id'])
                         kat = ques['kategori'].upper()
                         if user_ans == ques['jawaban_benar']:
-                            skor[kat] += 5
+                            if kat in skor: skor[kat] += 5
                     
                     # Simpan ke Supabase
                     supabase.table("user_scores").insert({
@@ -218,7 +219,7 @@ with tab_kuis:
 
     # --- KONDISI C: HASIL & PEMBAHASAN ---
     elif st.session_state.get('submitted'):
-        st.success("🎉 Simulasi Selesai! Skor Anda telah tercatat.")
+        st.success("🎉 Simulasi Selesai! Skor Anda telah tercatat di tab Progres.")
         if st.button("🔄 Ulangi Simulasi Baru"):
             st.session_state.submitted = False
             st.session_state.user_answers = {}
@@ -228,7 +229,7 @@ with tab_kuis:
             
         st.subheader("📝 Review & Pembahasan")
         for q in st.session_state.test_questions:
-            with st.expander(f"Soal {q['id']} - {q['kategori'].upper()}"):
+            with st.expander(f"Soal {st.session_state.test_questions.index(q)+1} - {q['kategori'].upper()}"):
                 st.write(f"**Pertanyaan:** {q['pertanyaan']}")
                 st.write(f"**Jawaban Anda:** {st.session_state.user_answers.get(q['id'], 'Tidak dijawab')}")
                 st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
@@ -311,6 +312,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
