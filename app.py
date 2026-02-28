@@ -141,13 +141,37 @@ with tab_progres:
     else:
         st.info("Belum ada data.")
 
+        # --- MASUKKAN KODE AI STUDY PATH DI SINI ---
+        st.markdown("---")
+        st.subheader("🤖 AI Study Path Recommendation")
+
+        # Mengambil data tes terakhir (baris paling bawah di database)
+        latest_test = df.iloc[-1] 
+
+        # Logika mencari skor terendah
+        scores_only = {
+            'TIU (Intelegensia)': latest_test['skor_tiu'],
+            'TWK (Wawasan)': latest_test['skor_twk'],
+            'TKP (Kepribadian)': latest_test['skor_tkp']
+        }
+        # Mencari kategori mana yang nilainya paling kecil
+        weakest_category = min(scores_only, key=scores_only.get)
+
+        # Menampilkan saran berdasarkan hasil analisis
+        if weakest_category == 'TIU (Intelegensia)':
+            st.error(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+            st.write("Analisis AI menunjukkan hambatan pada logika numerik. Perbanyak latihan deret angka.")
+        elif weakest_category == 'TWK (Wawasan)':
+            st.warning(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+            st.write("Fokus pada pemahaman nilai-nilai Pancasila dan sejarah konstitusi.")
+        else:
+            st.success(f"⚠️ **Prioritas Belajar:** {weakest_category}")
+            st.write("Skor kepribadianmu perlu ditingkatkan dalam aspek profesionalisme.")
+            
+
 # --- SIDEBAR LEADERBOARD ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
-
-
-
-
