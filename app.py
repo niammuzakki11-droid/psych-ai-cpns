@@ -166,8 +166,13 @@ with tab_kuis:
                 # HITUNG SKOR
                 skor_det = {"TIU": 0, "TWK": 0, "TKP": 0}
                 for q in st.session_state.test_questions:
+                    # PAKSA KATEGORI JADI HURUF BESAR (.upper())
+                    kat = q['kategori'].upper() 
+                    
                     if user_answers.get(q['id']) == q['jawaban_benar']:
-                        skor_det[q['kategori']] += 5
+                        # Pastikan kategori yang masuk adalah TIU, TWK, atau TKP
+                        if kat in skor_det:
+                            skor_det[kat] += 5
                 
                 durasi_akhir = round(time.time() - st.session_state.start_time, 2)
                 
@@ -210,15 +215,18 @@ with tab_kuis:
                 
 with tab_progres:
     st.title("📊 Analisis Psikometri Mendalam")
-    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).execute()
+    # Ambil data terbaru
+    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        # Membersihkan data dari nilai NULL agar tidak error saat dihitung
-        df_clean = df.dropna(subset=['skor_tiu', 'skor_twk', 'skor_tkp'])
         
-        if not df_clean.empty: # <--- PERBAIKAN SPASI DI SINI (Line 147)
-            latest = df_clean.iloc[-1]
+        # Jika data ada, tampilkan metrik terbaru
+        if not df.empty:
+            latest = df.iloc[-1]
+            
+            # Tampilkan Ringkasan Skor dalam Box Cantik
+            st.subheader(f"Hasil Terakhir: {latest.get('tanggal_tes', 'Baru saja')[:10]}")
             
             # --- 1. DATA UNTUK GRAFIK ---
             chart_data = pd.DataFrame({
@@ -282,6 +290,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
