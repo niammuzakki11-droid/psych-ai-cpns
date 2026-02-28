@@ -22,62 +22,33 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# --- FUNGSI GENERATOR PDF (Fix: Mengembalikan Bytes) ---
 def export_as_pdf(latest_data):
     pdf = FPDF()
     pdf.add_page()
-    
-    # Header Report
-    pdf.set_font("Arial", 'B', 16)
+    pdf.set_font("helvetica", 'B', 16)
     pdf.cell(200, 10, txt="RAPOR HASIL SIMULASI CPNS - PSYCH-AI", ln=True, align='C')
-    pdf.set_font("Arial", size=10)
-    pdf.cell(200, 10, txt=f"Tanggal Tes: {latest_data['tanggal_tes'][:10]}", ln=True, align='C')
+    pdf.set_font("helvetica", size=10)
+    pdf.cell(200, 10, txt=f"Tanggal: {latest_data.get('tanggal_tes', 'N/A')[:10]}", ln=True, align='C')
     pdf.ln(10)
     
-    # Data Peserta
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("helvetica", 'B', 12)
     pdf.cell(200, 10, txt=f"Peserta: {latest_data['nama_user']}", ln=True)
     pdf.ln(5)
     
     # Tabel Skor
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(60, 10, "Kategori", 1)
-    pdf.cell(60, 10, "Skor Anda", 1)
-    pdf.cell(60, 10, "Ambang Batas", 1)
+    pdf.set_font("helvetica", 'B', 11)
+    pdf.cell(60, 10, "Kategori", 1); pdf.cell(60, 10, "Skor", 1); pdf.cell(60, 10, "Ambang Batas", 1)
     pdf.ln()
+    pdf.set_font("helvetica", size=11)
+    pdf.cell(60, 10, "TIU", 1); pdf.cell(60, 10, str(latest_data['skor_tiu']), 1); pdf.cell(60, 10, str(PASSING_TIU), 1); pdf.ln()
+    pdf.cell(60, 10, "TWK", 1); pdf.cell(60, 10, str(latest_data['skor_twk']), 1); pdf.cell(60, 10, str(PASSING_TWK), 1); pdf.ln()
+    pdf.cell(60, 10, "TKP", 1); pdf.cell(60, 10, str(latest_data['skor_tkp']), 1); pdf.cell(60, 10, str(PASSING_TKP), 1); pdf.ln()
     
-    pdf.set_font("Arial", size=11)
-    # TIU
-    pdf.cell(60, 10, "TIU", 1)
-    pdf.cell(60, 10, str(latest_data['skor_tiu']), 1)
-    pdf.cell(60, 10, str(PASSING_TIU), 1)
-    pdf.ln()
-    # TWK
-    pdf.cell(60, 10, "TWK", 1)
-    pdf.cell(60, 10, str(latest_data['skor_twk']), 1)
-    pdf.cell(60, 10, str(PASSING_TWK), 1)
-    pdf.ln()
-    # TKP
-    pdf.cell(60, 10, "TKP", 1)
-    pdf.cell(60, 10, str(latest_data['skor_tkp']), 1)
-    pdf.cell(60, 10, str(PASSING_TKP), 1)
-    pdf.ln()
-    
-    # Skor Total
-    pdf.set_font("Arial", 'B', 12)
-    pdf.ln(5)
+    pdf.ln(5); pdf.set_font("helvetica", 'B', 12)
     pdf.cell(200, 10, txt=f"SKOR TOTAL: {latest_data['skor_total']}", ln=True)
+    return pdf.output()
     
-    # Status Kelulusan
-    is_lulus = latest_data['skor_tiu'] >= PASSING_TIU and \
-               latest_data['skor_twk'] >= PASSING_TWK and \
-               latest_data['skor_tkp'] >= PASSING_TKP
-               
-    status_txt = "LULUS AMBANG BATAS" if is_lulus else "BELUM LULUS"
-    pdf.set_text_color(0, 128, 0) if is_lulus else pdf.set_text_color(255, 0, 0)
-    pdf.cell(200, 10, txt=f"STATUS: {status_txt}", ln=True)
-    
-    return pdf.output(dest='S')
-
 st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
 # --- TARUH CSS DI SINI (Setelah set_page_config) ---
@@ -435,9 +406,9 @@ with tab_progres:
                         mime="application/pdf",
                         key="btn_download_unique", # Tambahkan KEY unik di sini
                         use_container_width=True
-                        )
-                except Exception as e:
-                    st.error(f"Gagal menyiapkan file PDF: {e}")
+                    )
+            except Exception as e:
+                st.error(f"Gagal menyiapkan file PDF: {e}")
     else:
         st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
@@ -447,5 +418,6 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
