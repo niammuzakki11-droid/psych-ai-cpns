@@ -424,15 +424,20 @@ with tab_progres:
 
             # 6. Tombol Download Report (Taruh di bawah st.metric)
             st.write("---")
-            pdf_bytes = export_as_pdf(latest)
-            st.download_button(
-                label="📥 Download Laporan Hasil (PDF)",
-                data=pdf_bytes,
-                file_name=f"Report_CPNS_{latest['tanggal_tes'][:10]}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-           
+            try:
+                pdf_bytes = export_as_pdf(latest)
+                
+                if pdf_bytes:
+                    st.download_button(
+                        label="📥 Download Laporan Hasil (PDF)",
+                        data=pdf_bytes,
+                        file_name=f"Rapor_CPNS_{latest['tanggal_tes'][:10]}.pdf",
+                        mime="application/pdf",
+                        key="btn_download_unique", # Tambahkan KEY unik di sini
+                        use_container_width=True
+        )
+except Exception as e:
+    st.error(f"Gagal menyiapkan file PDF: {e}")
     else:
         st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
@@ -442,3 +447,4 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
