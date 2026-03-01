@@ -145,7 +145,7 @@ if st.sidebar.button("Logout"):
     st.session_state.user = None
     st.rerun()
 
-tab_kuis, tab_progres = st.tabs(["✍️ Simulasi Ujian", "📊 Analisis Psikometri"])
+tab_kuis, tab_progres, tab_leaderboard = st.tabs(["✍️ Simulasi", "📊 Psikometri", "🏆 Hall of Fame"])
 
 with tab_kuis:
     # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
@@ -482,6 +482,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
