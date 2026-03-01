@@ -391,7 +391,7 @@ else:
     # °°° membuat tab pembahasan, progress dan leaderboard 
     tab_pembahasan, tab_progres, tab_leaderboard = st.tabs(["📝 Pembahasan", "📊 Psikometri", "🏆 Hall of Fame"])
 
-    with tab_review:
+    with tab_pembahasan:
         st.title("📝 Review & Pembahasan")
             
         for q in st.session_state.test_questions:
@@ -558,6 +558,7 @@ else:
             st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
         else:
             st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
