@@ -221,13 +221,12 @@ else:
     if st.sidebar.button("🏠 Kembali ke Dashboard"):
         st.session_state.page = 'dashboard'
         st.rerun()
-
+    
+    # MENJADI INI (Gunakan unpacking agar lebih jelas):
     # LOGIKA TAMPILAN DINAMIS
     if not st.session_state.get('submitted'):
         # SAAT UJIAN: Hanya muncul satu tab
-        tab_utama = st.tabs(["✍️ Simulasi Utama"])
-        with tab_utama[0]:
-            # Masukkan seluruh logika kuis (Kondisi A & B) di sini
+        st.subheader("✍️ Simulasi Utama")
         
             # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
             if 'current_idx' not in st.session_state: st.session_state.current_idx = 0
@@ -556,6 +555,7 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
