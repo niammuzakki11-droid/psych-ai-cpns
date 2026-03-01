@@ -218,7 +218,7 @@ else:
     if not st.session_state.get('submitted'):
         # SAAT UJIAN: Hanya muncul satu tab
         tab_utama = st.tabs(["✍️ Simulasi Utama"])
-        with tab_utama[0]:
+        with tab_utama:
             # Masukkan seluruh logika kuis (Kondisi A & B) di sini
         
             # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
@@ -411,11 +411,6 @@ else:
                 df = pd.DataFrame(res.data)
                 if not df.empty:
                     latest = df.iloc[-1]
-                    # Variabel 'latest' didefinisikan di sini
-                    latest = df.iloc[-1]
-                    
-                    # Semua kode yang pakai 'latest' harus masuk di dalam blok IF ini
-                    st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
                     # ... kode radar chart dan kawan-kawan ...
                                 
                     # --- 1. GRAFIK RADAR (Visualisasi ala Data Scientist) ---
@@ -558,3 +553,4 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
