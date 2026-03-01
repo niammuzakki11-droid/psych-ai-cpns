@@ -199,8 +199,16 @@ def show_landing_dashboard():
     with col_btn1:
         st.markdown("#### Siap Menguji Kemampuanmu?")
         st.write("Simulasi ini menggunakan sistem CAT resmi dengan bank soal terbaru.")
+    # --- Di dalam fungsi show_landing_dashboard() ---
     with col_btn2:
         if st.button("🚀 MULAI SIMULASI", use_container_width=True, type="primary"):
+            # RESET STATUS AGAR TIDAK LANGSUNG KE PEMBAHASAN
+            st.session_state.submitted = False
+            st.session_state.test_active = False
+            st.session_state.user_answers = {}
+            st.session_state.ragu_ragu = {}
+            st.session_state.current_idx = 0
+            
             st.session_state.page = 'simulasi'
             st.rerun()
 
@@ -214,11 +222,11 @@ else:
         st.session_state.page = 'dashboard'
         st.rerun()
 
-# --- LOGIKA TAMPILAN DINAMIS ---
+    # LOGIKA TAMPILAN DINAMIS
     if not st.session_state.get('submitted'):
         # SAAT UJIAN: Hanya muncul satu tab
         tab_utama = st.tabs(["✍️ Simulasi Utama"])
-        with tab_utama:
+        with tab_utama[0]:
             # Masukkan seluruh logika kuis (Kondisi A & B) di sini
         
             # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
@@ -548,5 +556,6 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
