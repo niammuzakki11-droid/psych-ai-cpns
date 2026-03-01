@@ -288,23 +288,21 @@ def show_profile_page():
 # --- LOGIKA TAMPILAN UTAMA ---
 # --- LOGIKA TAMPILAN UTAMA (Baris 207 ke bawah) ---
 st.sidebar.divider()
-menu = st.sidebar.radio("🧭 Menu Navigasi", ["🏠 Dashboard", "✍️ Simulasi", "👤 Profil Saya"])
 
-if menu == "🏠 Dashboard":
-    st.session_state.page = 'dashboard'
-    show_landing_dashboard()
+# Masukkan ini sebelum st.sidebar.radio
+pages = ["🏠 Dashboard", "✍️ Simulasi", "👤 Profil Saya"]
+# Tentukan indeks radio berdasarkan page saat ini
+current_idx = 0
+if st.session_state.page == 'simulasi': current_idx = 1
+elif st.session_state.page == 'profil': current_idx = 2
 
-elif menu == "👤 Profil Saya":
-    st.session_state.page = 'profil'
-    show_profile_page() # Fungsi ini harus sudah didefinisikan di atas (Kode 2)
+menu = st.sidebar.radio("🧭 Menu Navigasi", pages, index=current_idx)
 
-elif menu == "✍️ Simulasi":
-    st.session_state.page = 'simulasi'
-    # Taruh tombol kembali di sini
-    if st.sidebar.button("🏠 Kembali ke Dashboard"):
-        st.session_state.page = 'dashboard'
-        st.rerun()
-
+# Update state page berdasarkan pilihan radio (agar sinkron dua arah)
+if menu == "🏠 Dashboard": st.session_state.page = 'dashboard'
+elif menu == "✍️ Simulasi": st.session_state.page = 'simulasi'
+elif menu == "👤 Profil Saya": st.session_state.page = 'profil'
+    
     # 1. CEK APAKAH SUDAH SUBMIT (HASIL) ATAU MASIH UJIAN
     if not st.session_state.get('submitted'):
         
@@ -583,6 +581,7 @@ elif menu == "✍️ Simulasi":
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
