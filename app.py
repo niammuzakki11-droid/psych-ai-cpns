@@ -67,13 +67,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-with st.sidebar:
-    st.subheader("Navigasi Soal")
-    
-    # Menentukan jumlah kolom (misal: 5 kolom)
-    cols = st.columns(5)
-    total_soal = 40
     
     for i in range(total_soal):
         # Menggunakan modulo untuk menempatkan tombol di kolom yang tepat
@@ -499,6 +492,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
