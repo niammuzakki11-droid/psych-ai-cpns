@@ -58,7 +58,19 @@ import streamlit as st
 
 # Gunakan Custom CSS untuk menyeragamkan ukuran tombol
 st.markdown("""
-<style>
+    <style>
+    /* Mengubah tombol 'primary' menjadi Hijau (Terjawab/Ragu) */
+    div.stButton > button[kind="primary"] {
+        background-color: #28a745 !important;
+        color: white !important;
+        border: none !important;
+    }
+    /* Membuat tombol 'secondary' tetap Abu-abu (Belum Terjawab) */
+    div.stButton > button[kind="secondary"] {
+        background-color: #f0f2f6 !important;
+        color: #31333f !important;
+        border: 1px solid #dcdcdc !important;
+    }
     .stButton > button {
         width: 100%;
         border-radius: 5px;
@@ -487,6 +499,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
