@@ -239,6 +239,13 @@ def show_landing_dashboard():
             template="plotly_dark" # Sesuai tema gelap websitemu
         )
         
+        # 1. Kunci Sumbu X dan Y agar tidak bisa di-zoom
+        fig_trend.update_xaxes(fixedrange=True)
+        fig_trend.update_yaxes(fixedrange=True)
+        
+        # 2. Matikan mode geser (drag) pada layout
+        fig_trend.update_layout(dragmode=False)
+        
         st.plotly_chart(fig_trend, use_container_width=True, config={'displayModeBar': False})
 
     
@@ -522,6 +529,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
