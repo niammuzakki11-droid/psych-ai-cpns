@@ -220,6 +220,28 @@ def show_landing_dashboard():
             st.session_state.page = 'simulasi'
             st.rerun()
 
+    # --- DI DALAM show_landing_dashboard() ---
+    if res.data:
+        df_stats = pd.DataFrame(res.data)
+        
+        st.subheader("📈 Tren Progres Skor")
+        # Mengurutkan berdasarkan tanggal agar garis grafiknya benar
+        df_line = df_stats.sort_values('tanggal_tes')
+        
+        # Membuat grafik garis menggunakan Plotly Express
+        fig_trend = px.line(
+            df_line, 
+            x='tanggal_tes', 
+            y='skor_total',
+            markers=True,
+            title="Perjalanan Skor Total Kamu",
+            labels={'skor_total': 'Skor', 'tanggal_tes': 'Tanggal'},
+            template="plotly_dark" # Sesuai tema gelap websitemu
+        )
+        
+        st.plotly_chart(fig_trend, use_container_width=True)
+    
+
 # --- LOGIKA TAMPILAN UTAMA ---
 if st.session_state.page == 'dashboard':
     show_landing_dashboard()
@@ -499,6 +521,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
