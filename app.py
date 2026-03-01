@@ -68,6 +68,27 @@ def export_as_pdf(latest_data):
     pdf.cell(200, 10, txt=f"SKOR TOTAL: {latest_data['skor_total']}", ln=True)
     return bytes(pdf.output())
 
+def hitung_dan_simpan():
+    skor = {'TIU': 0, 'TWK': 0, 'TKP': 0}
+    for q in st.session_state.test_questions:
+        ans = st.session_state.user_answers.get(q['id'])
+        kat = q['kategori'].upper()
+        if kat != 'TKP' and ans == q['jawaban_benar']:
+            skor[kat] += 5
+        elif kat == 'TKP' and ans:
+            skor['TKP'] += 4 # Simulasi sederhana
+            
+    total = sum(skor.values())
+    data_score = {
+        "nama_user": st.session_state.user.email,
+        "skor_tiu": skor['TIU'], "skor_twk": skor['TWK'], "skor_tkp": skor['TKP'],
+        "skor_total": total,
+        "durasi_detik": int(time.time() - st.session_state.start_time)
+    }
+    supabase.table("user_scores").insert(data_score).execute()
+    st.session_state.submitted = True
+    st.rerun()
+
 def show_dashboard():
     st.title(f"👋 Halo, Pejuang!")
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
@@ -84,7 +105,7 @@ def show_dashboard():
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     else:
         st.info("Belum ada data. Mulai simulasi pertamamu!")
-  
+
 def show_profile_page():
     st.title("👤 Profil Pejuang CPNS")
     st.write(f"Halo, **{st.session_state.user.email}**! Pantau sejauh mana persiapanmu di sini.")
@@ -339,112 +360,9 @@ def render_results():
                         st.error(f"Gagal menyiapkan file PDF: {e}")
                 else:
                     st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
- 
-# 3. RENDER HALAMAN
-# ==========================================
-
-def show_dashboard():
-    st.title(f"👋 Selamat Datang, Pejuang!")
-    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
-    
-    if res.data:
-        df = pd.DataFrame(res.data)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("📊 Total Simulasi", f"{len(df)} Kali")
-        c2.metric("🏆 Skor Tertinggi", df['skor_total'].max())
-        c3.metric("⏳ Rata-rata Skor", int(df['skor_total'].mean()))
-        
-        st.subheader("📈 Tren Progres")
-        fig = px.line(df.sort_values('tanggal_tes'), x='tanggal_tes', y='skor_total', markers=True, template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Belum ada data aktivitas. Mulai simulasi pertamamu!")
-
-def render_exam():
-    total_waktu = 100 * 60
-    sisa = int(total_waktu - (time.time() - st.session_state.start_time))
-    
-    if sisa <= 0:
-        hitung_dan_simpan()
-
-    with st.sidebar:
-        st.error(f"⏳ Sisa Waktu: {sisa // 60:02d}:{sisa % 60:02d}")
-        st.divider()
-        st.markdown("### 🧭 Navigasi Soal")
-        n_soal = len(st.session_state.test_questions)
-        for r in range(0, n_soal, 5):
-            cols = st.columns(5)
-            for i in range(5):
-                idx = r + i
-                if idx < n_soal:
-                    q_id = st.session_state.test_questions[idx]['id']
-                    bt = "primary" if (q_id in st.session_state.user_answers or st.session_state.ragu_ragu.get(q_id)) else "secondary"
-                    label = f"⚠️{idx+1}" if st.session_state.ragu_ragu.get(q_id) else f"{idx+1}"
-                    if cols[i].button(label, key=f"nav_{idx}", type=bt):
-                        st.session_state.current_idx = idx
-                        st.rerun()
-
-    q = st.session_state.test_questions[st.session_state.current_idx]
-    st.subheader(f"Soal Nomor {st.session_state.current_idx + 1} ({q['kategori'].upper()})")
-    st.markdown(f"### {q['pertanyaan']}")
-    
-    opts = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
-    old_ans = st.session_state.user_answers.get(q['id'])
-    idx_default = opts.index(old_ans) if old_ans in opts else None
-    
-    ans = st.radio("Pilih Jawaban:", opts, index=idx_default, key=f"q_radio_{q['id']}")
-    if ans: st.session_state.user_answers[q['id']] = ans
-
-    st.divider()
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.session_state.current_idx > 0:
-            if st.button("⬅️ Sebelumnya"): st.session_state.current_idx -= 1; st.rerun()
-    with c2:
-        st.checkbox("Ragu-Ragu", key=f"chk_ragu_{q['id']}", 
-                    value=st.session_state.ragu_ragu.get(q['id'], False),
-                    on_change=lambda: st.session_state.ragu_ragu.update({q['id']: not st.session_state.ragu_ragu.get(q['id'], False)}))
-    with c3:
-        if st.session_state.current_idx < n_soal - 1:
-            if st.button("Simpan & Lanjut ➡️"): st.session_state.current_idx += 1; st.rerun()
-        else:
-            if st.button("🏁 SELESAI UJIAN", type="primary"): hitung_dan_simpan()
-
-def render_results():
-    st.success("🎉 Simulasi Selesai!")
-    tab_pembahasan, tab_progres, tab_leaderboard = st.tabs(["📝 Pembahasan", "📊 Psikometri", "🏆 Leaderboard"])
-
-    with tab_pembahasan:
-        for i, q in enumerate(st.session_state.test_questions):
-            with st.expander(f"Soal {i+1} - {q['kategori'].upper()}"):
-                st.write(f"**Pertanyaan:** {q['pertanyaan']}")
-                st.write(f"**Jawaban Anda:** {st.session_state.user_answers.get(q['id'], 'Tidak dijawab')}")
-                st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
-                st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
-
-    with tab_progres:
-        res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
-        if res.data:
-            latest = res.data[0]
-            # Radar Chart
-            categories = ['TIU', 'TWK', 'TKP']
-            scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
-            fig = go.Figure(data=go.Scatterpolar(r=scores_norm, theta=categories, fill='toself'))
-            fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), title="Radar Kompetensi")
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Download PDF
-            if st.button("📥 Download PDF Report"):
-                pdf_bytes = export_as_pdf(latest)
-                st.download_button(label="Klik untuk Unduh", data=pdf_bytes, file_name="Rapor_CPNS.pdf", mime="application/pdf")
-
-    with tab_leaderboard:
-        res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(10).execute()
-        if res_lb.data:
-            st.table(pd.DataFrame(res_lb.data))
 
 # ==========================================
-# 4. SISTEM AUTH & ROUTING (UTAMA)
+# 3. SISTEM AUTH & ROUTING (UTAMA)
 # ==========================================
 
 # Auto Login Check
@@ -494,24 +412,19 @@ with st.sidebar:
         st.session_state.clear(); st.rerun()
 
 # --- ROUTER HALAMAN ---
-if st.session_state.page == 'dashboard':
-    show_dashboard()
+if st.session_state.page == 'dashboard': show_dashboard()
 elif st.session_state.page == 'simulasi':
     if not st.session_state.submitted:
         if not st.session_state.test_active:
-            st.title("🛡️ Simulasi CAT SKD")
-            if st.button("🚀 MULAI SESI UJIAN"):
+            st.title("🛡️ Simulasi CAT")
+            if st.button("🚀 MULAI"):
                 res = supabase.table("bank_soal").select("*").execute()
                 if res.data:
-                    df = pd.DataFrame(res.data)
-                    st.session_state.test_questions = df.sample(n=min(len(df), 110)).to_dict('records')
+                    st.session_state.test_questions = pd.DataFrame(res.data).sample(n=10).to_dict('records')
                     st.session_state.test_active = True
                     st.session_state.start_time = time.time()
                     st.rerun()
-        else:
-            render_exam()
-    else:
-        render_results()
+        else: render_exam()
+    else: render_results()
 elif st.session_state.page == 'profil':
-    st.title("👤 Profil Saya")
-    show_dashboard() # Reuse metrik dashboard
+    show_dashboard()
