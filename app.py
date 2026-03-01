@@ -508,8 +508,8 @@ else:
             else:
                 st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
-# 1. Tambahkan "Hall of Fame" di deretan tab utama
-tab_kuis, tab_progres, tab_leaderboard = st.tabs(["✍️ Simulasi", "📊 Psikometri", "🏆 Hall of Fame"])
+    # 1. Tambahkan "Hall of Fame" di deretan tab utama
+    tab_kuis, tab_progres, tab_leaderboard = st.tabs(["✍️ Simulasi", "📊 Psikometri", "🏆 Hall of Fame"])
 
 # ... (Blok tab_kuis dan tab_progres tetap sama) ...
 
@@ -557,6 +557,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
