@@ -214,9 +214,14 @@ else:
         st.session_state.page = 'dashboard'
         st.rerun()
 
-    tab_kuis = st.tabs(["✍️ Simulasi"])
+# --- LOGIKA TAMPILAN DINAMIS ---
+if not st.session_state.get('submitted'):
+    # SAAT UJIAN: Hanya muncul satu tab
+    tab_utama = st.tabs(["✍️ Simulasi Utama"])
+    with tab_utama[0]:
+        # Masukkan seluruh logika kuis (Kondisi A & B) di sini
     
-    with tab_kuis:
+    with tab_utama:
         # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
         if 'current_idx' not in st.session_state: st.session_state.current_idx = 0
         if 'user_answers' not in st.session_state: st.session_state.user_answers = {}
@@ -380,6 +385,10 @@ else:
                 st.session_state.current_idx = 0
                 st.rerun()
 
+        st.write("Selesaikan ujianmu di sini...")
+        else:
+            # SETELAH SELESAI: Muncul tiga tab hasil
+            
             # °°° membuat tab pembahasan, progress dan leaderboard 
             tab_pembahasan, tab_progres, tab_leaderboard = st.tabs(["📝 Pembahasan", "📊 Psikometri", "🏆 Hall of Fame"])
 
@@ -550,4 +559,5 @@ else:
                             st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
                         else:
                             st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
