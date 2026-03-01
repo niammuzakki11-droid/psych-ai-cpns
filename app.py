@@ -479,11 +479,6 @@ else:
                     else:
                         st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
                                     
-                    col1, col2, col3 = st.columns(3)
-                    with col1: st.metric("TIU", latest['skor_tiu'], f"Min {PASSING_TIU}")
-                    with col2: st.metric("TWK", latest['skor_twk'], f"Min {PASSING_TWK}")
-                    with col3: st.metric("TKP", latest['skor_tkp'], f"Min {PASSING_TKP}")
-        
                     # --- 5.  STUDY PATH ---
                     st.markdown("---")
                     st.subheader("🤖 Study Path Recommendation")
@@ -553,4 +548,5 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
