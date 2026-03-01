@@ -267,8 +267,11 @@ def render_results():
                 st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
 
     with t_psi:
-       # Mengambil data terbaru untuk Radar Chart
+       # Ambil data terbaru berdasarkan EMAIL untuk filter (lebih akurat dari username)
         res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
+        # Jika tidak ketemu pakai email, coba pakai username (tergantung sistem simpan Anda sebelumnya)
+        if not res.data:
+             res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.get('username')).order("tanggal_tes", desc=True).limit(1).execute()
         if res.data:
             latest = res.data[0]
             categories = ['TIU', 'TWK', 'TKP']
@@ -384,4 +387,5 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
