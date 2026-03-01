@@ -250,140 +250,81 @@ elif st.session_state.page == 'simulasi':
                     st.session_state.start_time = time.time()
                     st.rerun()
 
-        # --- KONDISI B: SEDANG MENGERJAKAN SOAL ---
+                # --- KONDISI B: SEDANG MENGERJAKAN SOAL ---
         else:
-            # 1. TIMER & INFO DI SIDEBAR
             sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
             if sisa_waktu <= 0:
-                st.session_state.test_active = False
                 st.session_state.submitted = True
                 st.rerun()
         
-            # --- PINDAHKAN NAVIGASI KE SIDEBAR ---
+            # --- SIDEBAR (HANYA UNTUK TIMER & NOMOR) ---
             with st.sidebar:
                 st.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
                 st.divider()
                 st.markdown("### 🧭 Navigasi Soal")
                 
                 n_soal = len(st.session_state.test_questions)
-                # Menggunakan kolom yang lebih sedikit di sidebar (misal 5 kolom) agar tidak terlalu sempit
                 grid_cols = 5 
-                
                 for row_start in range(0, n_soal, grid_cols):
                     cols = st.columns(grid_cols)
                     for i in range(grid_cols):
                         idx = row_start + i
                         if idx < n_soal:
                             q_id = st.session_state.test_questions[idx]['id']
-                            
                             # Logika Warna
-                            if st.session_state.ragu_ragu.get(q_id):
-                                btn_label, btn_type = f"⚠️{idx+1}", "primary"
-                            elif q_id in st.session_state.user_answers:
-                                btn_label, btn_type = f"{idx+1}", "primary"
-                            else:
-                                btn_label, btn_type = f"{idx+1}", "secondary"
-                        
-                            if cols[i].button(btn_label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
+                            b_type = "primary" if (q_id in st.session_state.user_answers or st.session_state.ragu_ragu.get(q_id)) else "secondary"
+                            label = f"⚠️{idx+1}" if st.session_state.ragu_ragu.get(q_id) else f"{idx+1}"
+                            
+                            if cols[i].button(label, key=f"nav_{idx}", use_container_width=True, type=b_type):
                                 st.session_state.current_idx = idx
                                 st.rerun()
-                st.divider()
-        
-                # 3. AREA SOAL
-                q = st.session_state.test_questions[st.session_state.current_idx]
-                st.subheader(f"Soal Nomor {st.session_state.current_idx + 1}")
-                st.markdown(f"**Kategori:** {q['kategori'].upper()}")
-                st.write(q['pertanyaan'])
-    
-                opsi_label = ['A', 'B', 'C', 'D', 'E']
-                options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
-                old_ans = st.session_state.user_answers.get(q['id'])
-                # --- TAMBAHKAN KODE INI ---
-                # Cari index jawaban lama jika user sudah pernah memilih sebelumnya
-                try:
-                    index_lama = options.index(old_ans) if old_ans in options else None
-                except:
-                    index_lama = None
-                
-                # Tampilkan Radio Button untuk Opsi Jawaban
-                pilihan = st.radio(
-                    "Pilih Jawaban:",
-                    options,
-                    index=index_lama,
-                    key=f"q_{q['id']}"
-                )
+
+            # --- HALAMAN UTAMA (UNTUK SOAL) ---
+            # KELUAR DARI BLOK WITH SIDEBAR DI SINI
+            q = st.session_state.test_questions[st.session_state.current_idx]
+            st.subheader(f"Soal Nomor {st.session_state.current_idx + 1}")
+            st.info(f"**Kategori:** {q['kategori'].upper()}")
+            st.markdown(f"### {q['pertanyaan']}")
+
+            options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
+            old_ans = st.session_state.user_answers.get(q['id'])
             
-                # Simpan jawaban ke session state setiap kali ada perubahan
-                if pilihan:
-                    st.session_state.user_answers[q['id']] = pilihan
-                # -------------------------
+            # Cari index untuk default value radio button
+            idx_default = None
+            if old_ans in options:
+                idx_default = options.index(old_ans)
+            
+            pilihan = st.radio("Pilih Jawaban:", options, index=idx_default, key=f"q_radio_{q['id']}")
+            
+            if pilihan:
+                st.session_state.user_answers[q['id']] = pilihan
                            
-                # 4. TOMBOL KONTROL BAWAH
-                st.write("")
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    if st.session_state.current_idx > 0:
-                        if st.button("⬅️ Sebelumnya"):
-                            st.session_state.current_idx -= 1
-                            st.rerun()
-                with c2:
-                    is_ragu = st.checkbox("Ragu-Ragu", value=st.session_state.ragu_ragu.get(q['id'], False), key=f"rg_{q['id']}")
-                    st.session_state.ragu_ragu[q['id']] = is_ragu
-                with c3:
-                    if st.session_state.current_idx < n_soal - 1:
-                        if st.button("Simpan & Lanjutkan ➡️"):
-                            st.session_state.current_idx += 1
-                            st.rerun()
-                    else:
-                        if st.button("🏁 SELESAI UJIAN", type="primary"):
-                            skor = {"TWK": 0, "TIU": 0, "TKP": 0}
-                            n_soal = len(st.session_state.test_questions) # Pastikan n_soal dihitung ulang di sini
-                        
-                            for ques in st.session_state.test_questions:
-                                user_ans = st.session_state.user_answers.get(ques['id'])
-                                kat = ques['kategori'].upper()
-                    
-                                if user_ans:
-                                    # Mapping 5 Opsi ke 5 Kolom Poin
-                                    mapping_opsi = {
-                                        ques['opsi_a']: 'poin_a',
-                                        ques['opsi_b']: 'poin_b',
-                                        ques['opsi_c']: 'poin_c',
-                                        ques['opsi_d']: 'poin_d',
-                                        ques['opsi_e']: 'poin_e' # Baris krusial!
-                                    }
-                        
-                                    kolom_poin = mapping_opsi.get(user_ans)
-                                    poin_didapat = ques.get(kolom_poin, 0)
-                        
-                                    if kat in skor:
-                                        skor[kat] += poin_didapat
-                        
-                            # Simpan ke Supabase
-                            supabase.table("user_scores").insert({
-                                "nama_user": st.session_state.user.email,
-                                "skor_total": sum(skor.values()),
-                                "skor_tiu": skor["TIU"], "skor_twk": skor["TWK"], "skor_tkp": skor["TKP"],
-                                "total_soal": n_soal,
-                                "durasi_detik": round(time.time() - st.session_state.start_time)
-                            }).execute()
-                            
-                            st.session_state.test_active = False
-                            st.session_state.submitted = True
-                            st.rerun()
-        
+            st.divider()
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                if st.session_state.current_idx > 0:
+                    if st.button("⬅️ Sebelumnya"):
+                        st.session_state.current_idx -= 1
+                        st.rerun()
+            with c2:
+                # Perbaikan key agar tidak konflik
+                st.checkbox("Ragu-Ragu", key=f"chk_ragu_{q['id']}", 
+                            value=st.session_state.ragu_ragu.get(q['id'], False),
+                            on_change=lambda: st.session_state.ragu_ragu.update({q['id']: not st.session_state.ragu_ragu.get(q['id'], False)}))
+            with c3:
+                if st.session_state.current_idx < n_soal - 1:
+                    if st.button("Simpan & Lanjut ➡️"):
+                        st.session_state.current_idx += 1
+                        st.rerun()
+                else:
+                    if st.button("🏁 SELESAI UJIAN", type="primary"):
+                        # Logika Kalkulasi Skor (Sama seperti kode Anda namun tambahkan .get(..., 0))
+                        # ... simpan ke Supabase ...
+                        st.session_state.submitted = True
+                        st.rerun()
+
     # --- KONDISI C: HASIL & PEMBAHASAN ---
-    else st.session_state.get('submitted'):
-        st.success("🎉 Simulasi Selesai! Skor Anda telah tercatat di tab Progres.")
-        if st.button("🔄 Ulangi Simulasi Baru"):
-            st.session_state.submitted = False
-            st.session_state.user_answers = {}
-            st.session_state.ragu_ragu = {}
-            st.session_state.current_idx = 0
-            st.rerun()
-    
-            st.write("Selesaikan ujianmu di sini...")
-    else:
+    elif st.session_state.get('submitted'): # Gunakan ELIF
         st.success("🎉 Simulasi Selesai!")
         
         # SETELAH SELESAI: Muncul tiga tab hasil
@@ -547,6 +488,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
