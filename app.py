@@ -50,6 +50,74 @@ def export_as_pdf(latest_data):
    
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
+
+# --- LOGIKA NAVIGASI DASHBOARD ---
+# Gunakan session_state untuk menentukan apakah user sedang di Dashboard atau sedang Ujian
+if 'page' not in st.session_state:
+    st.session_state.page = 'dashboard'
+
+# --- FUNGSI HALAMAN DASHBOARD ---
+def show_landing_dashboard():
+    st.title(f"👋 Selamat Datang kembali, Pejuang!")
+    st.write("Pantau progres belajarmu dan siapkan diri untuk seleksi CPNS 2026.")
+
+    # 1. AMBIL DATA HISTORIS DARI SUPABASE
+    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
+    
+    if res.data:
+        df_stats = pd.DataFrame(res.data)
+        total_tes = len(df_stats)
+        high_score = df_stats['skor_total'].max()
+        avg_time = round(df_stats['durasi_detik'].mean() / 60, 1)
+        latest_test = df_stats.iloc[0]
+
+        # 2. RINGKASAN STATISTIK (CARD STYLE)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("📊 Total Simulasi", f"{total_tes} Kali")
+        c2.metric("🏆 Skor Tertinggi", high_score)
+        c3.metric("⏳ Rata-rata Waktu", f"{avg_time} Menit")
+
+        st.divider()
+
+        # 3. VISUALISASI AMBANG BATAS (LATEST TEST)
+        st.subheader("🎯 Status Kelulusan Terakhir")
+        col_tiu, col_twk, col_tkp = st.columns(3)
+        
+        # Fungsi pembantu untuk Progress Bar
+        def draw_progress(label, current, target):
+            pct = min(current / target, 1.0)
+            color = "green" if current >= target else "orange"
+            st.write(f"**{label}**: {current} / {target}")
+            st.progress(pct)
+
+        with col_tiu: draw_progress("TIU", latest_test['skor_tiu'], PASSING_TIU)
+        with col_twk: draw_progress("TWK", latest_test['skor_twk'], PASSING_TWK)
+        with col_tkp: draw_progress("TKP", latest_test['skor_tkp'], PASSING_TKP)
+
+    else:
+        st.info("Belum ada data aktivitas. Mulailah simulasi pertamamu hari ini!")
+
+    st.write("---")
+    
+    # 4. CALL TO ACTION (TOMBOL MULAI)
+    col_btn1, col_btn2 = st.columns([2, 1])
+    with col_btn1:
+        st.markdown("#### Siap Menguji Kemampuanmu?")
+        st.write("Simulasi ini menggunakan sistem CAT resmi dengan bank soal terbaru.")
+    with col_btn2:
+        if st.button("🚀 MULAI SIMULASI", use_container_width=True, type="primary"):
+            st.session_state.page = 'simulasi'
+            st.rerun()
+
+# --- LOGIKA TAMPILAN UTAMA ---
+if st.session_state.page == 'dashboard':
+    show_landing_dashboard()
+else:
+    # (Di sini masukkan seluruh kode tab_kuis, tab_progres, dll yang sudah kamu buat sebelumnya)
+    # Tambahkan tombol kembali di sidebar jika perlu
+    if st.sidebar.button("🏠 Kembali ke Dashboard"):
+        st.session_state.page = 'dashboard'
+        st.rerun()
     
 st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
@@ -482,6 +550,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
