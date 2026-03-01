@@ -255,7 +255,7 @@ elif st.session_state.page == 'simulasi':
             st.subheader("✍️ Simulasi Utama")
             
             # --- KONDISI B: MODE UJIAN AKTIF (SISTEM NAVIGASI) ---
-            elif st.session_state.get('test_active'):
+            if st.session_state.get('test_active'):
                 # 1. TIMER & HEADER
                 sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
                 if sisa_waktu <= 0:
@@ -550,6 +550,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
