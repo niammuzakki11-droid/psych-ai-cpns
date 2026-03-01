@@ -83,7 +83,7 @@ def hitung_dan_simpan():
     
     data_score = {
         "nama_user": st.session_state.user.email, # TETAP GUNAKAN EMAIL SEBAGAI KEY UTAMA
-        "display_username": st.session_state.get('username', "Anonim"), # Username untuk Leaderboard
+        "username": st.session_state.get('username', "Anonim"), # Username untuk Leaderboard
         "skor_tiu": skor['TIU'], 
         "skor_twk": skor['TWK'], 
         "skor_tkp": skor['TKP'],
@@ -266,36 +266,37 @@ def render_results():
     with t_psi:
        # Ambil data terbaru berdasarkan EMAIL untuk filter (lebih akurat dari username)
         res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
-        # Jika tidak ketemu pakai email, coba pakai username (tergantung sistem simpan Anda sebelumnya)
-        if not res.data:
-             res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.get('username')).order("tanggal_tes", desc=True).limit(1).execute()
         if res.data:
             latest = res.data[0]
             categories = ['TIU', 'TWK', 'TKP']
-            # Normalisasi skor (asumsi TIU:175, TWK:150, TKP:225)
+            # Normalisasi skor
             scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
             
-            # Memperbaiki NameError 'go'
-            fig = go.Figure(data=go.Scatterpolar(r=scores_norm, theta=categories, fill='toself', line_color='#1E88E5'))
+            fig = go.Figure(data=go.Scatterpolar(
+                r=scores_norm, 
+                theta=categories, 
+                fill='toself', 
+                line_color='#1E88E5'
+            ))
             
             fig.update_layout(
                 polar=dict(
                     radialaxis=dict(
-                        visible=True,
-                        range=[0, 100],
-                        tickfont=dict(color="black", size=10) # Angka di dalam radar jadi hitam
+                        visible=True, 
+                        range=[0, 100], 
+                        tickfont=dict(color="black", size=10) # ANGKA HITAM
                     ),
-                    bgcolor="white" # Latar belakang radar putih agar angka hitam terlihat jelas
+                    bgcolor="white"
                 ),
-                dragmode=False, # Kunci Zoom/Geser
-                showlegend=False 
+                dragmode=False, # KUNCI ZOOM/GESER
+                showlegend=False,
+                title="Radar Kompetensi"
             )
-
-            # HAPUS ICON (ModeBar) dan kunci scroll zoom
+            
+            # HAPUS ICON POJOK KANAN & KUNCI SCROLL
             st.plotly_chart(fig, use_container_width=True, config={
                 'displayModeBar': False, 
-                'scrollZoom': False,
-                'staticPlot': False
+                'scrollZoom': False
             })
         
             # Tombol download PDF
@@ -303,7 +304,7 @@ def render_results():
                 st.download_button("Klik Unduh", export_as_pdf(latest), "Rapor.pdf", "application/pdf")
 
     with t_lb:
-        res_lb = supabase.table("user_scores").select("display_username, skor_total").order("skor_total", desc=True).limit(10).execute()
+        res_lb = supabase.table("user_scores").select("username, skor_total").order("skor_total", desc=True).limit(10).execute()
         if res_lb.data:
             df_lb = pd.DataFrame(res_lb.data)
             df_lb.columns = ['Pejuang', 'Total Skor']
@@ -386,6 +387,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
 
 
