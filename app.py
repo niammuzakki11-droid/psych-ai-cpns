@@ -6,6 +6,7 @@ import time
 from streamlit_cookies_controller import CookieController
 from fpdf import FPDF
 import io
+import plotly.graph_objects as go
 
 # ==========================================
 # 1. KONFIGURASI & STATE (WAJIB DI ATAS)
@@ -224,14 +225,20 @@ def render_results():
                 st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
 
     with t_psi:
+       # Mengambil data terbaru untuk Radar Chart
         res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
         if res.data:
             latest = res.data[0]
             categories = ['TIU', 'TWK', 'TKP']
-            # Normalisasi skor (asumsi skor maksimal TIU:175, TWK:150, TKP:225)
+            # Normalisasi skor (asumsi TIU:175, TWK:150, TKP:225)
             scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
             
-            fig = go.Figure(data=go.Scatterpolar(r=scores_norm, theta=categories, fill='toself'))
+            # Memperbaiki NameError 'go'
+            fig = go.Figure(data=go.Scatterpolar(
+                r=scores_norm, 
+                theta=categories, 
+                fill='toself'
+            ))
             fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), title="Radar Kompetensi")
             st.plotly_chart(fig, use_container_width=True)
             
@@ -313,6 +320,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
+
 
 
 
