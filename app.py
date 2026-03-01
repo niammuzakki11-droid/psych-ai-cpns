@@ -243,14 +243,64 @@ def show_landing_dashboard():
         
         st.plotly_chart(fig_trend, use_container_width=True, config={'displayModeBar': False})
 
+# --- Baris 192: Akhir dari show_landing_dashboard ---    
+def show_profile_page():
+    st.title("👤 Profil Pejuang CPNS")
+    st.write(f"Halo, **{st.session_state.user.email}**! Pantau sejauh mana persiapanmu di sini.")
     
+    # 1. AMBIL DATA DARI SUPABASE
+    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
+    
+    if res.data:
+        df = pd.DataFrame(res.data)
+        
+        # 2. METRIK KUMULATIF
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Percobaan", f"{len(df)} Kali")
+        col2.metric("Skor Tertinggi", df['skor_total'].max())
+        col3.metric("Rata-rata Skor", int(df['skor_total'].mean()))
+        
+        st.divider()
+        
+        # 3. GRAFIK TREN (Locked & Clean)
+        st.subheader("📈 Progres Skor Keseluruhan")
+        df_line = df.sort_values('tanggal_tes')
+        fig = px.line(df_line, x='tanggal_tes', y='skor_total', markers=True, template="plotly_dark")
+        
+        fig.update_xaxes(fixedrange=True)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_layout(dragmode=False)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        
+        st.divider()
+        
+        # 4. TABEL RIWAYAT LENGKAP
+        st.subheader("📜 Riwayat Pengerjaan")
+        df_display = df[['tanggal_tes', 'skor_tiu', 'skor_twk', 'skor_tkp', 'skor_total']].copy()
+        df_display.columns = ['Tanggal', 'TIU', 'TWK', 'TKP', 'Total']
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
+    else:
+        st.info("Belum ada riwayat pengerjaan. Yuk, mulai simulasi pertama kamu!")
+
+# --- Baris 195: Lanjut ke Logika Tampilan Utama ---
+
 
 # --- LOGIKA TAMPILAN UTAMA ---
-if st.session_state.page == 'dashboard':
+# --- LOGIKA TAMPILAN UTAMA (Baris 207 ke bawah) ---
+st.sidebar.divider()
+menu = st.sidebar.radio("🧭 Menu Navigasi", ["🏠 Dashboard", "✍️ Simulasi", "👤 Profil Saya"])
+
+if menu == "🏠 Dashboard":
+    st.session_state.page = 'dashboard'
     show_landing_dashboard()
 
-elif st.session_state.page == 'simulasi':
-    # Tombol kembali di sidebar
+elif menu == "👤 Profil Saya":
+    st.session_state.page = 'profil'
+    show_profile_page() # Fungsi ini harus sudah didefinisikan di atas (Kode 2)
+
+elif menu == "✍️ Simulasi":
+    st.session_state.page = 'simulasi'
+    # Taruh tombol kembali di sini
     if st.sidebar.button("🏠 Kembali ke Dashboard"):
         st.session_state.page = 'dashboard'
         st.rerun()
@@ -533,6 +583,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
