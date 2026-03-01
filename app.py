@@ -82,8 +82,8 @@ def hitung_dan_simpan():
     total = sum(skor.values())
     
     data_score = {
-        "nama_user": st.session_state.user.email, # TETAP GUNAKAN EMAIL agar data terlacak
-        "display_username": st.session_state.get('username', "Pejuang Anonim"), # Tambahkan kolom baru jika ada di database
+        "nama_user": st.session_state.user.email, # TETAP GUNAKAN EMAIL SEBAGAI KEY UTAMA
+        "display_username": st.session_state.get('username', "Anonim"), # Username untuk Leaderboard
         "skor_tiu": skor['TIU'], 
         "skor_twk": skor['TWK'], 
         "skor_tkp": skor['TKP'],
@@ -303,9 +303,11 @@ def render_results():
                 st.download_button("Klik Unduh", export_as_pdf(latest), "Rapor.pdf", "application/pdf")
 
     with t_lb:
-        res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(10).execute()
+        res_lb = supabase.table("user_scores").select("display_username, skor_total").order("skor_total", desc=True).limit(10).execute()
         if res_lb.data:
-            st.table(pd.DataFrame(res_lb.data))     
+            df_lb = pd.DataFrame(res_lb.data)
+            df_lb.columns = ['Pejuang', 'Total Skor']
+            st.table(df_lb)     
 
 # ==========================================
 # 3. SISTEM AUTH & ROUTING (UTAMA)
@@ -384,6 +386,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
 
 
