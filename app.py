@@ -388,125 +388,125 @@ else:
                     st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
                     st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
                     
-with tab_progres:
-    st.title("📊 Analisis Psikometri")
-    
-    # Ambil data terbaru dari Supabase
-    res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
-    
-    if res.data:
-        df = pd.DataFrame(res.data)
-        if not df.empty:
-            latest = df.iloc[-1]
-            # Variabel 'latest' didefinisikan di sini
-            latest = df.iloc[-1]
-            
-            # Semua kode yang pakai 'latest' harus masuk di dalam blok IF ini
-            st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
-            # ... kode radar chart dan kawan-kawan ...
-            
-            # --- 1. GRAFIK RADAR (Visualisasi ala Data Scientist) ---
-            import plotly.graph_objects as go
-
-            categories = ['TIU', 'TWK', 'TKP']
-            # Normalisasi skor ke skala 0-100 agar grafik radar simetris
-            scores_norm = [
-                (latest['skor_tiu'] / 175) * 100, 
-                (latest['skor_twk'] / 150) * 100, 
-                (latest['skor_tkp'] / 225) * 100
-            ]
-
-            fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(
-                r=scores_norm,
-                theta=categories,
-                fill='toself',
-                name='Profil Anda',
-                line_color='#1E88E5'
-            ))
-
-            fig_radar.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-                showlegend=True,
-                title="Radar Kompetensi (Skala 100)"
-            )
-            st.plotly_chart(fig_radar, use_container_width=True)
-
-            # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
-            st.subheader("💡 Analisis Performa")
-            
-            # Cari kategori dengan persentase terendah
-            pct_scores = {
-                'TIU': (latest['skor_tiu'] / 175),
-                'TWK': (latest['skor_twk'] / 150),
-                'TKP': (latest['skor_tkp'] / 225)
-            }
-            weakest = min(pct_scores, key=pct_scores.get)
-            strongest = max(pct_scores, key=pct_scores.get)
-
-            c1, c2 = st.columns(2)
-            with c1:
-                st.success(f"✅ **Kekuatan Utama:** {strongest}")
-                st.write("Pertahankan performa ini! Kamu sudah memiliki pondasi yang kuat di aspek ini.")
-            with c2:
-                st.error(f"⚠️ **Perlu Ditingkatkan:** {weakest}")
-                st.write(f"Fokuslah mempelajari materi {weakest} lebih dalam untuk mengejar ambang batas.")
-
-            # --- 3. STATUS KELULUSAN (Metrik) ---
-            st.divider()
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
-            with col2: st.metric("Skor TWK", latest['skor_twk'], f"Target {PASSING_TWK}")
-            with col3: st.metric("Skor TKP", latest['skor_tkp'], f"Target {PASSING_TKP}")
-            
-            # --- 4. EVALUASI AMBANG BATAS ---
-            st.markdown("---")
-            st.subheader("📋 Status Kelulusan Terakhir")
-            
-            if latest['skor_tiu'] >= PASSING_TIU and \
-               latest['skor_twk'] >= PASSING_TWK and \
-               latest['skor_tkp'] >= PASSING_TKP:
-                st.success("🎉 SELAMAT! Anda Lulus Ambang Batas BKN.")
-                st.balloons()
-            else:
-                st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
+    with tab_progres:
+        st.title("📊 Analisis Psikometri")
+        
+        # Ambil data terbaru dari Supabase
+        res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
+        
+        if res.data:
+            df = pd.DataFrame(res.data)
+            if not df.empty:
+                latest = df.iloc[-1]
+                # Variabel 'latest' didefinisikan di sini
+                latest = df.iloc[-1]
                 
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric("TIU", latest['skor_tiu'], f"Min {PASSING_TIU}")
-            with col2: st.metric("TWK", latest['skor_twk'], f"Min {PASSING_TWK}")
-            with col3: st.metric("TKP", latest['skor_tkp'], f"Min {PASSING_TKP}")
-
-            # --- 5.  STUDY PATH ---
-            st.markdown("---")
-            st.subheader("🤖 Study Path Recommendation")
-            scores = {'TIU': latest['skor_tiu'], 'TWK': latest['skor_twk'], 'TKP': latest['skor_tkp']}
-            weakest = min(scores, key=scores.get)
-            
-            if weakest == 'TIU':
-                st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda masih di bawah {PASSING_TIU}.")
-            elif weakest == 'TWK':
-                st.warning(f"⚠️ **Prioritas:** Perdalam Sejarah & Pancasila. Target TWK adalah {PASSING_TWK}.")
-            else:
-                st.info(f"⚠️ **Prioritas:** Tingkatkan Kepribadian Profesional. Anda butuh {PASSING_TKP} di TKP.")
-
-            # 6. Tombol Download Report (Taruh di bawah st.metric)
-            st.write("---")
-            try:
-                pdf_bytes = export_as_pdf(latest)
+                # Semua kode yang pakai 'latest' harus masuk di dalam blok IF ini
+                st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
+                # ... kode radar chart dan kawan-kawan ...
                 
-                if pdf_bytes:
-                    st.download_button(
-                        label="📥 Download Laporan Hasil (PDF)",
-                        data=pdf_bytes,
-                        file_name=f"Rapor_CPNS_{latest['tanggal_tes'][:10]}.pdf",
-                        mime="application/pdf",
-                        key="btn_download_unique", # Tambahkan KEY unik di sini
-                        use_container_width=True
-                    )
-            except Exception as e:
-                st.error(f"Gagal menyiapkan file PDF: {e}")
-        else:
-            st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
+                # --- 1. GRAFIK RADAR (Visualisasi ala Data Scientist) ---
+                import plotly.graph_objects as go
+    
+                categories = ['TIU', 'TWK', 'TKP']
+                # Normalisasi skor ke skala 0-100 agar grafik radar simetris
+                scores_norm = [
+                    (latest['skor_tiu'] / 175) * 100, 
+                    (latest['skor_twk'] / 150) * 100, 
+                    (latest['skor_tkp'] / 225) * 100
+                ]
+
+                fig_radar = go.Figure()
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=scores_norm,
+                    theta=categories,
+                    fill='toself',
+                    name='Profil Anda',
+                    line_color='#1E88E5'
+                ))
+    
+                fig_radar.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                    showlegend=True,
+                    title="Radar Kompetensi (Skala 100)"
+                )
+                st.plotly_chart(fig_radar, use_container_width=True)
+    
+                # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
+                st.subheader("💡 Analisis Performa")
+                
+                # Cari kategori dengan persentase terendah
+                pct_scores = {
+                    'TIU': (latest['skor_tiu'] / 175),
+                    'TWK': (latest['skor_twk'] / 150),
+                    'TKP': (latest['skor_tkp'] / 225)
+                }
+                weakest = min(pct_scores, key=pct_scores.get)
+                strongest = max(pct_scores, key=pct_scores.get)
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.success(f"✅ **Kekuatan Utama:** {strongest}")
+                    st.write("Pertahankan performa ini! Kamu sudah memiliki pondasi yang kuat di aspek ini.")
+                with c2:
+                    st.error(f"⚠️ **Perlu Ditingkatkan:** {weakest}")
+                    st.write(f"Fokuslah mempelajari materi {weakest} lebih dalam untuk mengejar ambang batas.")
+    
+                # --- 3. STATUS KELULUSAN (Metrik) ---
+                st.divider()
+                col1, col2, col3 = st.columns(3)
+                with col1: st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
+                with col2: st.metric("Skor TWK", latest['skor_twk'], f"Target {PASSING_TWK}")
+                with col3: st.metric("Skor TKP", latest['skor_tkp'], f"Target {PASSING_TKP}")
+                
+                # --- 4. EVALUASI AMBANG BATAS ---
+                st.markdown("---")
+                st.subheader("📋 Status Kelulusan Terakhir")
+                
+                if latest['skor_tiu'] >= PASSING_TIU and \
+                   latest['skor_twk'] >= PASSING_TWK and \
+                   latest['skor_tkp'] >= PASSING_TKP:
+                    st.success("🎉 SELAMAT! Anda Lulus Ambang Batas BKN.")
+                    st.balloons()
+                else:
+                    st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1: st.metric("TIU", latest['skor_tiu'], f"Min {PASSING_TIU}")
+                with col2: st.metric("TWK", latest['skor_twk'], f"Min {PASSING_TWK}")
+                with col3: st.metric("TKP", latest['skor_tkp'], f"Min {PASSING_TKP}")
+    
+                # --- 5.  STUDY PATH ---
+                st.markdown("---")
+                st.subheader("🤖 Study Path Recommendation")
+                scores = {'TIU': latest['skor_tiu'], 'TWK': latest['skor_twk'], 'TKP': latest['skor_tkp']}
+                weakest = min(scores, key=scores.get)
+                
+                if weakest == 'TIU':
+                    st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda masih di bawah {PASSING_TIU}.")
+                elif weakest == 'TWK':
+                    st.warning(f"⚠️ **Prioritas:** Perdalam Sejarah & Pancasila. Target TWK adalah {PASSING_TWK}.")
+                else:
+                    st.info(f"⚠️ **Prioritas:** Tingkatkan Kepribadian Profesional. Anda butuh {PASSING_TKP} di TKP.")
+    
+                # 6. Tombol Download Report (Taruh di bawah st.metric)
+                st.write("---")
+                try:
+                    pdf_bytes = export_as_pdf(latest)
+                    
+                    if pdf_bytes:
+                        st.download_button(
+                            label="📥 Download Laporan Hasil (PDF)",
+                            data=pdf_bytes,
+                            file_name=f"Rapor_CPNS_{latest['tanggal_tes'][:10]}.pdf",
+                            mime="application/pdf",
+                            key="btn_download_unique", # Tambahkan KEY unik di sini
+                            use_container_width=True
+                        )
+                except Exception as e:
+                    st.error(f"Gagal menyiapkan file PDF: {e}")
+            else:
+                st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
 
 # 1. Tambahkan "Hall of Fame" di deretan tab utama
 tab_kuis, tab_progres, tab_leaderboard = st.tabs(["✍️ Simulasi", "📊 Psikometri", "🏆 Hall of Fame"])
@@ -557,6 +557,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
