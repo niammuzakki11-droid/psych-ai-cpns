@@ -252,45 +252,41 @@ elif st.session_state.page == 'simulasi':
 
         # --- KONDISI B: SEDANG MENGERJAKAN SOAL ---
         else:
-            st.subheader("✍️ Simulasi Utama")
-            
-            # --- KONDISI B: MODE UJIAN AKTIF (SISTEM NAVIGASI) ---
-            if st.session_state.get('test_active'):
-                # 1. TIMER & HEADER
-                sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
-                if sisa_waktu <= 0:
-                    st.session_state.test_active = False
-                    st.session_state.submitted = True
-                    st.rerun()
+            # 1. TIMER & INFO DI SIDEBAR
+            sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
+            if sisa_waktu <= 0:
+                st.session_state.test_active = False
+                st.session_state.submitted = True
+                st.rerun()
         
-                st.sidebar.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
-                st.write(f"👤 **Peserta:** {st.session_state.user.email}")
-        
-                # 2. GRID NAVIGASI (Fixing Logic Warna & Tipe)
-                st.markdown("### Navigasi Soal")
+            # --- PINDAHKAN NAVIGASI KE SIDEBAR ---
+            with st.sidebar:
+                st.error(f"⏳ Sisa Waktu: {sisa_waktu // 60:02d}:{sisa_waktu % 60:02d}")
+                st.divider()
+                st.markdown("### 🧭 Navigasi Soal")
+                
                 n_soal = len(st.session_state.test_questions)
-                for row_start in range(0, n_soal, 10): 
-                    cols = st.columns(10)
-                    for i in range(10):
+                # Menggunakan kolom yang lebih sedikit di sidebar (misal 5 kolom) agar tidak terlalu sempit
+                grid_cols = 5 
+                
+                for row_start in range(0, n_soal, grid_cols):
+                    cols = st.columns(grid_cols)
+                    for i in range(grid_cols):
                         idx = row_start + i
                         if idx < n_soal:
                             q_id = st.session_state.test_questions[idx]['id']
                             
-                            # --- LOGIKA WARNA TOMBOL CAT BKN ---
+                            # Logika Warna
                             if st.session_state.ragu_ragu.get(q_id):
-                                # Ragu-ragu: Tetap pakai icon agar beda secara visual
-                                btn_label, btn_type = f"⚠️ {idx+1}", "primary"
+                                btn_label, btn_type = f"⚠️{idx+1}", "primary"
                             elif q_id in st.session_state.user_answers:
-                                # TERJAWAB: Gunakan 'primary' agar berubah HIJAU via CSS
                                 btn_label, btn_type = f"{idx+1}", "primary"
                             else:
-                                # BELUM TERJAWAB: Gunakan 'secondary' (Abu-abu/Putih)
                                 btn_label, btn_type = f"{idx+1}", "secondary"
                         
                             if cols[i].button(btn_label, key=f"nav_{idx}", use_container_width=True, type=btn_type):
                                 st.session_state.current_idx = idx
                                 st.rerun()
-        
                 st.divider()
         
                 # 3. AREA SOAL
@@ -550,6 +546,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
