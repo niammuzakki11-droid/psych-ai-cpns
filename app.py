@@ -79,15 +79,23 @@ def hitung_dan_simpan():
             skor['TKP'] += 4 # Simulasi sederhana
             
     total = sum(skor.values())
+    # Menyiapkan data untuk dikirim ke Supabase
     data_score = {
         "nama_user": st.session_state.user.email,
-        "skor_tiu": skor['TIU'], "skor_twk": skor['TWK'], "skor_tkp": skor['TKP'],
+        "skor_tiu": skor['TIU'], 
+        "skor_twk": skor['TWK'], 
+        "skor_tkp": skor['TKP'],
         "skor_total": total,
         "durasi_detik": int(time.time() - st.session_state.start_time)
     }
-    supabase.table("user_scores").insert(data_score).execute()
-    st.session_state.submitted = True
-    st.rerun()
+    
+    try:
+        # Proses simpan ke database
+        supabase.table("user_scores").insert(data_score).execute()
+        st.session_state.submitted = True
+        st.rerun()
+    except Exception as e:
+        st.error(f"Gagal menyimpan ke database: {e}")
 
 def show_dashboard():
     st.title(f"👋 Halo, Pejuang!")
@@ -217,13 +225,17 @@ def render_results():
         res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
         if res.data:
             latest = res.data[0]
-            cat = ['TIU', 'TWK', 'TKP']
-            val = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
-            fig = go.Figure(data=go.Scatterpolar(r=val, theta=cat, fill='toself'))
+            categories = ['TIU', 'TWK', 'TKP']
+            # Normalisasi skor (asumsi skor maksimal TIU:175, TWK:150, TKP:225)
+            scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
+            
+            fig = go.Figure(data=go.Scatterpolar(r=scores_norm, theta=categories, fill='toself'))
             fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), title="Radar Kompetensi")
             st.plotly_chart(fig, use_container_width=True)
-            if st.button("📥 Download PDF"):
-                st.download_button("Klik untuk Unduh", export_as_pdf(latest), f"Rapor_{latest['tanggal_tes'][:10]}.pdf", "application/pdf")
+            
+            # Tombol download PDF
+            pdf_bytes = export_as_pdf(latest)
+            st.download_button(label="📥 Download Rapor (PDF)", data=pdf_bytes, file_name=f"Rapor_CPNS_{latest['nama_user']}.pdf", mime="application/pdf")
 
     with t_lb:
         res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(10).execute()
@@ -299,3 +311,4 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
+
