@@ -54,90 +54,89 @@ def export_as_pdf(latest_data):
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
 
-
-    # --- 2. GRID NAVIGASI (VERSI FIX: PERSEGI & WARNA) ---
-    st.markdown("### Navigasi Soal")
+# --- 2. GRID NAVIGASI (VERSI FIX: PERSEGI & WARNA) ---
+st.markdown("### Navigasi Soal")
         
-    # Injeksi CSS Tunggal (Hanya perlu dipanggil sekali)
-    st.markdown("""
-        <style>
-        /* Container Tombol */
-        .nav-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-start;
-            margin-bottom: 20px;
-        }
+# Injeksi CSS Tunggal (Hanya perlu dipanggil sekali)
+st.markdown("""
+    <style>
+    /* Container Tombol */
+    .nav-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-start;
+        margin-bottom: 20px;
+    }
 
-        /* Paksa Tombol Menjadi PERSEGI */
-        div.stButton > button {
-            width: 45px !important;
-            height: 45px !important;
-            min-width: 45px !important;
-            max-width: 45px !important;
-            padding: 0px !important;
-            border-radius: 4px !important;
-            font-weight: bold !important;
-            border: 1px solid #d1d1d1 !important;
-            transition: 0.3s;
-        }
+    /* Paksa Tombol Menjadi PERSEGI */
+    div.stButton > button {
+        width: 45px !important;
+        height: 45px !important;
+        min-width: 45px !important;
+        max-width: 45px !important;
+        padding: 0px !important;
+        border-radius: 4px !important;
+        font-weight: bold !important;
+        border: 1px solid #d1d1d1 !important;
+        transition: 0.3s;
+    }
 
-        /* HIJAU: Jika sudah dijawab (Primary) */
-        div.stButton > button[kind="primary"] {
-            background-color: #28a745 !important;
-            color: white !important;
-            border: none !important;
-        }
+    /* HIJAU: Jika sudah dijawab (Primary) */
+    div.stButton > button[kind="primary"] {
+        background-color: #28a745 !important;
+        color: white !important;
+        border: none !important;
+    }
 
-        /* KUNING: Jika Ragu-Ragu (Menggunakan trik label ⚠️) */
-        /* Kita targetkan button yang mengandung emoji ⚠️ */
-        div.stButton > button:has(div:contains("⚠️")), 
-        div.stButton > button:has(span:contains("⚠️")),
-        div.stButton > button p:contains("⚠️") {
-            background-color: #ffc107 !important;
-            color: black !important;
-            border: none !important;
-        }
+    /* KUNING: Jika Ragu-Ragu (Menggunakan trik label ⚠️) */
+    /* Kita targetkan button yang mengandung emoji ⚠️ */
+    div.stButton > button:has(div:contains("⚠️")), 
+    div.stButton > button:has(span:contains("⚠️")),
+    div.stButton > button p:contains("⚠️") {
+        background-color: #ffc107 !important;
+        color: black !important;
+        border: none !important;
+    }
 
-        /* HOVER EFFECT */
-        div.stButton > button:hover {
-            border-color: #007bff !important;
-            box-shadow: 0 0 5px rgba(0,123,255,0.5);
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    /* HOVER EFFECT */
+    div.stButton > button:hover {
+        border-color: #007bff !important;
+        box-shadow: 0 0 5px rgba(0,123,255,0.5);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    n_soal = len(st.session_state.test_questions)
+n_soal = len(st.session_state.test_questions)
         
-    # Menggunakan kolom agar tertata rapi di mobile (8 kolom per baris)
-    cols_per_row = 8
-    for row_idx in range(0, n_soal, cols_per_row):
-        cols = st.columns(cols_per_row)
-        for col_idx in range(cols_per_row):
-            idx = row_idx + col_idx
-            if idx < n_soal:
-                q_id = st.session_state.test_questions[idx]['id']
+# Menggunakan kolom agar tertata rapi di mobile (8 kolom per baris)
+cols_per_row = 8
+for row_idx in range(0, n_soal, cols_per_row):
+    cols = st.columns(cols_per_row)
+    for col_idx in range(cols_per_row):
+        idx = row_idx + col_idx
+        if idx < n_soal:
+            q_id = st.session_state.test_questions[idx]['id']
                     
-                # Logika Penentuan Label & Tipe Warna
-                is_ragu = st.session_state.ragu_ragu.get(q_id, False)
-                is_answered = q_id in st.session_state.user_answers
+            # Logika Penentuan Label & Tipe Warna
+            is_ragu = st.session_state.ragu_ragu.get(q_id, False)
+            is_answered = q_id in st.session_state.user_answers
                     
-                if is_ragu:
-                    btn_label = f"⚠️{idx+1}"
-                    btn_type = "secondary" # Akan diubah jadi Kuning oleh CSS :contains
-                elif is_answered:
-                    btn_label = f"{idx+1}"
-                    btn_type = "primary"   # Akan diubah jadi Hijau oleh CSS
-                else:
-                    btn_label = f"{idx+1}"
-                    btn_type = "secondary" # Tetap Abu-abu default
+            if is_ragu:
+                btn_label = f"⚠️{idx+1}"
+                btn_type = "secondary" # Akan diubah jadi Kuning oleh CSS :contains
+            elif is_answered:
+                btn_label = f"{idx+1}"
+                btn_type = "primary"   # Akan diubah jadi Hijau oleh CSS
+            else:
+                btn_label = f"{idx+1}"
+                btn_type = "secondary" # Tetap Abu-abu default
                     
-                if cols[col_idx].button(btn_label, key=f"btn_nav_{idx}", use_container_width=True, type=btn_type):
-                    st.session_state.current_idx = idx
-                    st.rerun()
+            if cols[col_idx].button(btn_label, key=f"btn_nav_{idx}", use_container_width=True, type=btn_type):
+                st.session_state.current_idx = idx
+                st.rerun()
         
-    st.divider()
+st.divider()
 
 # --- LOGIKA AUTO-LOGIN YANG AMAN ---
 # 1. Ambil token (kunci) dari laci browser
@@ -617,6 +616,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
