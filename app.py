@@ -68,11 +68,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
     
-    for i in range(total_soal):
-        # Menggunakan modulo untuk menempatkan tombol di kolom yang tepat
-        with cols[i % 5]:
-            st.button(str(i+1), key=f"btn_{i}")
-
 # --- LOGIKA AUTO-LOGIN YANG AMAN ---
 # 1. Ambil token (kunci) dari laci browser
 saved_token = controller.get('supabase_token') 
@@ -492,6 +487,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
