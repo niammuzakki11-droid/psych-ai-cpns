@@ -80,15 +80,18 @@ def hitung_dan_simpan():
             skor['TKP'] += 4 # Simulasi sederhana
             
     total = sum(skor.values())
-    # Menyiapkan data untuk dikirim ke Supabase
-    # PERBAIKAN DI SINI: Tambahkan kolom total_soal
+    
+    # Ambil username dari session state, jika kosong gunakan Nama Default
+    user_identity = st.session_state.get('username', "Anonim")
+    
     data_score = {
-        "nama_user": st.session_state.user.email,
+        "nama_user": user_identity, # Sekarang menyimpan Username, bukan Email
+        "email_internal": st.session_state.user.email, # Simpan email di kolom berbeda untuk admin
         "skor_tiu": skor['TIU'], 
         "skor_twk": skor['TWK'], 
         "skor_tkp": skor['TKP'],
         "skor_total": total,
-        "total_soal": len(st.session_state.test_questions), # Kolom ini wajib ada
+        "total_soal": len(st.session_state.test_questions),
         "durasi_detik": int(time.time() - st.session_state.start_time)
     }
     
@@ -118,10 +121,35 @@ def show_dashboard():
         st.info("Belum ada data. Mulai simulasi pertamamu!")
 
 def show_profile_page():
-    st.title("👤 Profil Pejuang CPNS")
-    st.write(f"Halo, **{st.session_state.user.email}**! Pantau sejauh mana persiapanmu di sini.")
+    st.title("👤 Profil & Pengaturan")
     
-    # 1. AMBIL DATA DARI SUPABASE
+    # --- BAGIAN 1: PENGATURAN USERNAME ---
+    with st.expander("🛠️ Pengaturan Akun", expanded=True):
+        st.subheader("Ubah Nama Tampilan")
+        # Mengambil username saat ini dari session_state
+        current_username = st.session_state.get('username', "Pejuang CPNS")
+        
+        new_username = st.text_input(
+            "Buat Username (Akan tampil di Leaderboard)", 
+            value=current_username,
+            placeholder="Contoh: Pejuang_Kudus26",
+            key="input_username_baru"
+        )
+        
+        if st.button("Simpan Username", type="primary"):
+            if len(new_username) < 3:
+                st.warning("Username minimal 3 karakter!")
+            else:
+                # Simpan ke session_state agar sidebar langsung berubah
+                st.session_state.username = new_username
+                st.success(f"Username berhasil diubah menjadi: **{new_username}**")
+                time.sleep(1)
+                st.rerun()
+
+    st.divider()
+
+    # --- BAGIAN 2: STATISTIK & RIWAYAT (LOGIKA LAMA ANDA) ---
+    # Memanggil data dari Supabase berdasarkan email untuk keamananE
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
     
     if res.data:
@@ -247,20 +275,12 @@ def render_results():
                     radialaxis=dict(
                         visible=True,
                         range=[0, 100],
-                        tickfont=dict(color="black") # Mengubah warna angka di dalam radar menjadi hitam
-                    )
+                        tickfont=dict(color="black", size=10) # Angka di dalam radar jadi hitam
+                    ),
+                    bgcolor="white" # Latar belakang radar putih agar angka hitam terlihat jelas
                 ),
-                showlegend=True,
-                title="Radar Kompetensi (Skala 100)",
-                dragmode=False # Mengunci agar radar tidak bisa digeser/zoom dengan mouse
+                dragmode=False # Kunci Zoom/Geser
             )
-            
-            # Menghilangkan bar alat (ikon pojok kanan) dan menonaktifkan scroll zoom
-            st.plotly_chart(fig, use_container_width=True, config={
-                'displayModeBar': False, 
-                'scrollZoom': False,
-                'staticPlot': False
-            })
             
             # Tombol download PDF
             if st.button("📥 Download Rapor"):
@@ -313,13 +333,21 @@ if st.session_state.user is None:
 
 # --- SIDEBAR UTAMA ---
 with st.sidebar:
-    st.write(f"👤 {st.session_state.user.email}")
+    # Mengambil nama dari session state atau gunakan default jika belum set username
+    display_name = st.session_state.get('username', "Pejuang CPNS")
+    st.markdown(f"### 👤 {display_name}") 
+    
+    # Navigasi tetap sama
     nav = st.radio("🧭 Menu", ["Dashboard", "Simulasi", "Profil"], 
-                   index=0 if st.session_state.page == 'dashboard' else 1 if st.session_state.page == 'simulasi' else 2)
+                   index=["dashboard", "simulasi", "profil"].index(st.session_state.page))
     st.session_state.page = nav.lower()
-    if st.button("Logout"):
-        supabase.auth.sign_out(); controller.remove('supabase_token')
-        st.session_state.clear(); st.rerun()
+    
+    st.divider()
+    if st.button("Logout", use_container_width=True):
+        supabase.auth.sign_out()
+        controller.remove('supabase_token')
+        st.session_state.clear()
+        st.rerun()
 
 # --- ROUTER HALAMAN ---
 if st.session_state.page == 'dashboard': show_dashboard()
@@ -340,8 +368,3 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
-
-
-
-
-
