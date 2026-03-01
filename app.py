@@ -373,7 +373,7 @@ elif st.session_state.page == 'simulasi':
                             st.rerun()
         
             # --- KONDISI C: HASIL & PEMBAHASAN ---
-            elif st.session_state.get('submitted'):
+            else st.session_state.get('submitted'):
                 st.success("🎉 Simulasi Selesai! Skor Anda telah tercatat di tab Progres.")
                 if st.button("🔄 Ulangi Simulasi Baru"):
                     st.session_state.submitted = False
@@ -546,6 +546,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
