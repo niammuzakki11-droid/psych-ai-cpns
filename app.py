@@ -54,28 +54,31 @@ def export_as_pdf(latest_data):
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
     
-# --- CSS UNTUK GRID NAVIGASI & TOMBOL ---
+import streamlit as st
+
+# Gunakan Custom CSS untuk menyeragamkan ukuran tombol
 st.markdown("""
-    <style>
-    /* Menyeragamkan ukuran tombol navigasi di sidebar */
-    [data-testid="stSidebar"] .stButton > button {
-        width: 100% !important;
-        padding: 5px 0px !important;
-        height: 40px !important;
-        font-size: 14px !important;
+<style>
+    .stButton > button {
+        width: 100%;
+        border-radius: 5px;
+        height: 3em;
+        padding: 0px;
     }
-    /* Tombol Terjawab/Ragu (Primary) */
-    div.stButton > button[kind="primary"] {
-        background-color: #28a745 !important;
-        color: white !important;
-    }
-    /* Tombol Belum Terjawab (Secondary) */
-    div.stButton > button[kind="secondary"] {
-        background-color: #f0f2f6 !important;
-        color: #31333f !important;
-    }
-    </style>
+</style>
 """, unsafe_allow_html=True)
+
+with st.sidebar:
+    st.subheader("Navigasi Soal")
+    
+    # Menentukan jumlah kolom (misal: 5 kolom)
+    cols = st.columns(5)
+    total_soal = 40
+    
+    for i in range(total_soal):
+        # Menggunakan modulo untuk menempatkan tombol di kolom yang tepat
+        with cols[i % 5]:
+            st.button(str(i+1), key=f"btn_{i}")
 
 # --- LOGIKA AUTO-LOGIN YANG AMAN ---
 # 1. Ambil token (kunci) dari laci browser
@@ -496,6 +499,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
