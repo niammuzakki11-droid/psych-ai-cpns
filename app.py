@@ -97,7 +97,7 @@ if saved_token and st.session_state.user is None:
 
 # --- GERBANG MASUK (LOGIN & REGISTER) ---
 if st.session_state.user is None:
-    st.title("🚀 Pejuang CPNS: Psych-AI Dashboard")
+    st.title("🚀 Pejuang CPNS")
     tab_masuk, tab_daftar = st.tabs(["🔑 Login Member", "📝 Daftar Akun Baru"])
     
     with tab_masuk:
@@ -555,6 +555,7 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
