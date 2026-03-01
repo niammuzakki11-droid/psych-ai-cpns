@@ -47,7 +47,9 @@ def export_as_pdf(latest_data):
     
     pdf.ln(5); pdf.set_font("helvetica", 'B', 12)
     pdf.cell(200, 10, txt=f"SKOR TOTAL: {latest_data['skor_total']}", ln=True)
-    return pdf.output()
+   
+    # Pastikan mengembalikan bytes murni
+    return bytes(pdf.output())
     
 st.set_page_config(page_title="Psych-AI CPNS: Intelligence", page_icon="🧠")
 
@@ -437,6 +439,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
