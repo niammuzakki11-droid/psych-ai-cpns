@@ -235,12 +235,32 @@ def render_results():
             
             # Memperbaiki NameError 'go'
             fig = go.Figure(data=go.Scatterpolar(
-                r=scores_norm, 
-                theta=categories, 
-                fill='toself'
+                r=scores_norm,
+                theta=categories,
+                fill='toself',
+                name='Profil Anda',
+                line_color='#1E88E5'
             ))
-            fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), title="Radar Kompetensi")
-            st.plotly_chart(fig, use_container_width=True)
+            
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100],
+                        tickfont=dict(color="black") # Mengubah warna angka di dalam radar menjadi hitam
+                    )
+                ),
+                showlegend=True,
+                title="Radar Kompetensi (Skala 100)",
+                dragmode=False # Mengunci agar radar tidak bisa digeser/zoom dengan mouse
+            )
+            
+            # Menghilangkan bar alat (ikon pojok kanan) dan menonaktifkan scroll zoom
+            st.plotly_chart(fig, use_container_width=True, config={
+                'displayModeBar': False, 
+                'scrollZoom': False,
+                'staticPlot': False
+            })
             
             # Tombol download PDF
             if st.button("📥 Download Rapor"):
@@ -320,6 +340,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
+
 
 
 
