@@ -81,12 +81,9 @@ def hitung_dan_simpan():
             
     total = sum(skor.values())
     
-    # Ambil username dari session state, jika kosong gunakan Nama Default
-    user_identity = st.session_state.get('username', "Anonim")
-    
     data_score = {
-        "nama_user": user_identity, # Sekarang menyimpan Username, bukan Email
-        "email_internal": st.session_state.user.email, # Simpan email di kolom berbeda untuk admin
+        "nama_user": st.session_state.user.email, # TETAP GUNAKAN EMAIL agar data terlacak
+        "display_username": st.session_state.get('username', "Pejuang Anonim"), # Tambahkan kolom baru jika ada di database
         "skor_tiu": skor['TIU'], 
         "skor_twk": skor['TWK'], 
         "skor_tkp": skor['TKP'],
@@ -387,5 +384,6 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
 
