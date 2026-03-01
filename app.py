@@ -225,6 +225,25 @@ with tab_kuis:
         opsi_label = ['A', 'B', 'C', 'D', 'E']
         options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
         old_ans = st.session_state.user_answers.get(q['id'])
+        # --- TAMBAHKAN KODE INI ---
+        # Cari index jawaban lama jika user sudah pernah memilih sebelumnya
+        try:
+            index_lama = options.index(old_ans) if old_ans in options else None
+        except:
+            index_lama = None
+        
+        # Tampilkan Radio Button untuk Opsi Jawaban
+        pilihan = st.radio(
+            "Pilih Jawaban:",
+            options,
+            index=index_lama,
+            key=f"q_{q['id']}"
+        )
+        
+        # Simpan jawaban ke session state setiap kali ada perubahan
+        if pilihan:
+            st.session_state.user_answers[q['id']] = pilihan
+        # -------------------------
                    
         # 4. TOMBOL KONTROL BAWAH
         st.write("")
@@ -418,6 +437,7 @@ st.sidebar.subheader("🏆 Top Pejuang CPNS")
 res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
 if res_lb.data:
     st.sidebar.table(pd.DataFrame(res_lb.data))
+
 
 
 
