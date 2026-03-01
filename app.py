@@ -121,26 +121,24 @@ def show_dashboard():
         st.info("Belum ada data. Mulai simulasi pertamamu!")
 
 def show_profile_page():
-    st.title("👤 Profil & Pengaturan")
+    st.title("👤 Pengaturan Profil")
     
-    # --- BAGIAN 1: PENGATURAN USERNAME ---
-    with st.expander("🛠️ Pengaturan Akun", expanded=True):
-        st.subheader("Ubah Nama Tampilan")
-        # Mengambil username saat ini dari session_state
-        current_username = st.session_state.get('username', "Pejuang CPNS")
+    # --- FORM INPUT USERNAME ---
+    with st.container(border=True):
+        st.subheader("Identitas Pejuang")
+        # Mengambil username yang sudah ada atau default kosong
+        current_name = st.session_state.get('username', "")
         
         new_username = st.text_input(
-            "Buat Username (Akan tampil di Leaderboard)", 
-            value=current_username,
-            placeholder="Contoh: Pejuang_Kudus26",
-            key="input_username_baru"
+            "Buat Username Anda (Akan tampil di Leaderboard)", 
+            value=current_name,
+            placeholder="Contoh: Pejuang_Kudus26"
         )
         
-        if st.button("Simpan Username", type="primary"):
+        if st.button("Simpan Perubahan Nama"):
             if len(new_username) < 3:
-                st.warning("Username minimal 3 karakter!")
+                st.error("Username minimal 3 karakter!")
             else:
-                # Simpan ke session_state agar sidebar langsung berubah
                 st.session_state.username = new_username
                 st.success(f"Username berhasil diubah menjadi: **{new_username}**")
                 time.sleep(1)
@@ -262,13 +260,7 @@ def render_results():
             scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
             
             # Memperbaiki NameError 'go'
-            fig = go.Figure(data=go.Scatterpolar(
-                r=scores_norm,
-                theta=categories,
-                fill='toself',
-                name='Profil Anda',
-                line_color='#1E88E5'
-            ))
+            fig = go.Figure(data=go.Scatterpolar(r=scores_norm, theta=categories, fill='toself', line_color='#1E88E5'))
             
             fig.update_layout(
                 polar=dict(
@@ -279,9 +271,17 @@ def render_results():
                     ),
                     bgcolor="white" # Latar belakang radar putih agar angka hitam terlihat jelas
                 ),
-                dragmode=False # Kunci Zoom/Geser
+                dragmode=False, # Kunci Zoom/Geser
+                showlegend=False 
             )
-            
+
+            # HAPUS ICON (ModeBar) dan kunci scroll zoom
+            st.plotly_chart(fig, use_container_width=True, config={
+                'displayModeBar': False, 
+                'scrollZoom': False,
+                'staticPlot': False
+            })
+        
             # Tombol download PDF
             if st.button("📥 Download Rapor"):
                 st.download_button("Klik Unduh", export_as_pdf(latest), "Rapor.pdf", "application/pdf")
@@ -366,5 +366,5 @@ elif st.session_state.page == 'simulasi':
             render_exam()
     else: 
         render_results()
-elif st.session_state.page == 'profil':
-    show_dashboard()
+elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
+    show_profile_page()
