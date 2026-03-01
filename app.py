@@ -384,8 +384,9 @@ elif st.session_state.page == 'simulasi':
     
             st.write("Selesaikan ujianmu di sini...")
     else:
+        st.success("🎉 Simulasi Selesai!")
+        
         # SETELAH SELESAI: Muncul tiga tab hasil
-                
         # °°° membuat tab pembahasan, progress dan leaderboard 
         tab_pembahasan, tab_progres, tab_leaderboard = st.tabs(["📝 Pembahasan", "📊 Psikometri", "🏆 Hall of Fame"])
     
@@ -546,6 +547,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
