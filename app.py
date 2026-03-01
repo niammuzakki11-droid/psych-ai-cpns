@@ -159,6 +159,20 @@ if st.sidebar.button("Logout"):
 if 'page' not in st.session_state:
     st.session_state.page = 'dashboard'
 
+# --- LOGIKA NAVIGASI UTAMA ---
+# Tambahkan 'Profil' ke dalam pilihan menu
+menu = st.sidebar.radio("Navigasi", ["🏠 Dashboard", "✍️ Simulasi", "👤 Profil Saya"])
+
+if menu == "🏠 Dashboard":
+    st.session_state.page = 'dashboard'
+    show_landing_dashboard()
+elif menu == "✍️ Simulasi":
+    st.session_state.page = 'simulasi'
+    # Panggil logika simulasi/tab yang sudah kita buat
+elif menu == "👤 Profil Saya":
+    st.session_state.page = 'profil'
+    show_profile_page()
+
 # --- FUNGSI HALAMAN DASHBOARD ---
 def show_landing_dashboard():
     st.title(f"👋 Selamat Datang kembali, Pejuang!")
@@ -538,6 +552,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
