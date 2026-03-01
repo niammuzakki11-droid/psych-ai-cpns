@@ -223,15 +223,18 @@ else:
         st.rerun()
     
     # MENJADI INI (Gunakan unpacking agar lebih jelas):
-    # LOGIKA TAMPILAN DINAMIS
+    # --- LOGIKA TAMPILAN DINAMIS ---
     if not st.session_state.get('submitted'):
         # SAAT UJIAN: Hanya muncul satu tab
         st.subheader("✍️ Simulasi Utama")
         
-            # 1. INISIALISASI STATE NAVIGASI (Infrastruktur CAT)
-            if 'current_idx' not in st.session_state: st.session_state.current_idx = 0
-            if 'user_answers' not in st.session_state: st.session_state.user_answers = {}
-            if 'ragu_ragu' not in st.session_state: st.session_state.ragu_ragu = {}
+        # 1. INISIALISASI STATE NAVIGASI (Hapus spasi berlebih di baris-baris ini)
+        if 'current_idx' not in st.session_state: 
+            st.session_state.current_idx = 0
+        if 'user_answers' not in st.session_state: 
+            st.session_state.user_answers = {}
+        if 'ragu_ragu' not in st.session_state: 
+            st.session_state.ragu_ragu = {}
         
             # --- KONDISI A: HALAMAN AWAL (TOMBOL MULAI) ---
             if not st.session_state.get('test_active') and not st.session_state.get('submitted'):
@@ -555,6 +558,7 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
