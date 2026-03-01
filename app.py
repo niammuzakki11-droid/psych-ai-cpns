@@ -105,7 +105,7 @@ def hitung_dan_simpan():
         st.error(f"Gagal menyimpan ke database: {e}")
 
 def show_dashboard():
-    st.title(f"👋 Halo, Pejuang!")
+    st.title(f"👋 Halo, {st.session_state.get('username', 'Pejuang')}!")
     res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).execute()
     
     if res.data:
@@ -132,10 +132,37 @@ def show_dashboard():
             'displayModeBar': False,  # Menghapus ikon zoom, download, dll
             'scrollZoom': False       # Mematikan zoom pakai scroll mouse
         })
-        # ---------------------------
-        
     else:
         st.info("Belum ada data. Mulai simulasi pertamamu!")
+
+    # --- TAMBAHKAN MENU MULAI SIMULASI DI DASHBOARD ---
+    st.divider()
+    st.subheader("🚀 Siap Menguji Kemampuan?")
+    
+    col_info, col_btn = st.columns([2, 1])
+    
+    with col_info:
+        st.write("""
+        Gunakan simulasi ini untuk mengukur kesiapanmu menghadapi seleksi CPNS 2026. 
+        Sistem menggunakan standar CAT terbaru dengan komposisi:
+        - **30** Soal TWK
+        - **35** Soal TIU
+        - **45** Soal TKP
+        """)
+        
+    with col_btn:
+        st.write("") # Spacer agar tombol sejajar tengah
+        if st.button("📝 MULAI SIMULASI SEKARANG", type="primary", use_container_width=True):
+            # Reset semua state simulasi agar bersih
+            st.session_state.submitted = False
+            st.session_state.test_active = False
+            st.session_state.user_answers = {}
+            st.session_state.ragu_ragu = {}
+            st.session_state.current_idx = 0
+            
+            # Pindahkan halaman ke menu simulasi
+            st.session_state.page = 'simulasi'
+            st.rerun()
 
 def show_profile_page():
     st.title("👤 Pengaturan Profil")
@@ -408,6 +435,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
 
 
