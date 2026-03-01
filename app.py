@@ -54,20 +54,25 @@ def export_as_pdf(latest_data):
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
     
-# --- TARUH CSS DI SINI (Setelah set_page_config) ---
+# --- CSS UNTUK GRID NAVIGASI & TOMBOL ---
 st.markdown("""
     <style>
-    /* Mengubah tombol 'primary' menjadi Hijau (Terjawab/Ragu) */
+    /* Menyeragamkan ukuran tombol navigasi di sidebar */
+    [data-testid="stSidebar"] .stButton > button {
+        width: 100% !important;
+        padding: 5px 0px !important;
+        height: 40px !important;
+        font-size: 14px !important;
+    }
+    /* Tombol Terjawab/Ragu (Primary) */
     div.stButton > button[kind="primary"] {
         background-color: #28a745 !important;
         color: white !important;
-        border: none !important;
     }
-    /* Membuat tombol 'secondary' tetap Abu-abu (Belum Terjawab) */
+    /* Tombol Belum Terjawab (Secondary) */
     div.stButton > button[kind="secondary"] {
         background-color: #f0f2f6 !important;
         color: #31333f !important;
-        border: 1px solid #dcdcdc !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -252,7 +257,10 @@ elif st.session_state.page == 'simulasi':
 
                 # --- KONDISI B: SEDANG MENGERJAKAN SOAL ---
         else:
-            sisa_waktu = int((100 * 60) - (time.time() - st.session_state.start_time))
+            total_waktu_detik = 100 * 60
+            waktu_berjalan = time.time() - st.session_state.start_time
+            sisa_waktu = int(total_waktu_detik - waktu_berjalan)
+            
             if sisa_waktu <= 0:
                 st.session_state.submitted = True
                 st.rerun()
@@ -488,6 +496,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
