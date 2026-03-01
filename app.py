@@ -419,7 +419,21 @@ elif st.session_state.page == 'simulasi':
                         showlegend=True,
                         title="Radar Kompetensi (Skala 100)"
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True)
+                    
+                    # Tambahkan ini sebelum st.plotly_chart
+                    fig_radar.update_layout(
+                        polar=dict(
+                            radialaxis=dict(fixedrange=True), # Kunci zoom radial
+                            angularaxis=dict(fixedrange=True) # Kunci zoom angular
+                        ),
+                        dragmode=False # Matikan mode klik-tahan
+                    )
+                    
+                    # Gunakan config untuk mematikan scroll zoom dan menyembunyikan bar
+                    st.plotly_chart(fig_radar, use_container_width=True, config={
+                        'displayModeBar': False, 
+                        'scrollZoom': False
+                    })
                         
                     # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
                     st.subheader("💡 Analisis Performa")
@@ -529,6 +543,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
