@@ -115,8 +115,24 @@ def show_dashboard():
         c3.metric("⏳ Rata-rata Skor", int(df['skor_total'].mean()))
         
         st.subheader("📈 Tren Progres")
+        # Membuat grafik garis
         fig = px.line(df.sort_values('tanggal_tes'), x='tanggal_tes', y='skor_total', markers=True, template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        
+        # --- BAGIAN KUNCI GRAFIK ---
+        fig.update_layout(
+            dragmode=False, # Mengunci agar tidak bisa di-zoom atau digeser
+            xaxis=dict(fixedrange=True), # Mengunci sumbu X
+            yaxis=dict(fixedrange=True), # Mengunci sumbu Y
+            hovermode="x unified" # Memperjelas tampilan saat kursor di atas titik
+        )
+        
+        # Menampilkan grafik TANPA ICON (ModeBar) di pojok kanan atas
+        st.plotly_chart(fig, use_container_width=True, config={
+            'displayModeBar': False,  # Menghapus ikon zoom, download, dll
+            'scrollZoom': False       # Mematikan zoom pakai scroll mouse
+        })
+        # ---------------------------
+        
     else:
         st.info("Belum ada data. Mulai simulasi pertamamu!")
 
@@ -132,7 +148,7 @@ def show_profile_page():
         new_username = st.text_input(
             "Buat Username Anda (Akan tampil di Leaderboard)", 
             value=current_name,
-            placeholder="Contoh: Pejuang_Kudus26"
+            placeholder="Contoh: Pejuang_CPNS26"
         )
         
         if st.button("Simpan Perubahan Nama"):
@@ -368,3 +384,4 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
