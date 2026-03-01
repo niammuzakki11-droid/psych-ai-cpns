@@ -420,6 +420,10 @@ elif st.session_state.page == 'simulasi':
                         title="Radar Kompetensi (Skala 100)"
                     )
                     
+                    fig_trend.update_xaxes(fixedrange=True) # Kunci sumbu horizontal
+                    fig_trend.update_yaxes(fixedrange=True) # Kunci sumbu vertikal
+                    fig_trend.update_layout(dragmode=False)
+                    
                     # Gunakan config untuk mematikan scroll zoom dan menyembunyikan bar
                     st.plotly_chart(fig_radar, use_container_width=True, config={
                         'displayModeBar': False, 
@@ -534,6 +538,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
