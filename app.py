@@ -163,203 +163,72 @@ def show_simulasi():
         render_results()
 
 def render_exam():
-    # Sidebar Timer & Navigasi
-    total_waktu = 100 * 60
-    sisa = int(total_waktu - (time.time() - st.session_state.start_time))
-    
-    if sisa <= 0:
-        st.session_state.submitted = True
-        st.rerun()
+    sisa = int((100 * 60) - (time.time() - st.session_state.start_time))
+    if sisa <= 0: hitung_dan_simpan()
 
     with st.sidebar:
-        st.error(f"⏳ Sisa Waktu: {sisa // 60:02d}:{sisa % 60:02d}")
-        # Grid Nomor Soal
-        n = len(st.session_state.test_questions)
-        # --- GRID NOMOR SOAL (SIDEBAR) ---
-        st.markdown("### 🧭 Navigasi Soal")
-        
+        st.error(f"⏳ Sisa: {sisa // 60:02d}:{sisa % 60:02d}")
+        st.markdown("### 🧭 Navigasi")
         n_soal = len(st.session_state.test_questions)
-        grid_cols = 5  # Menampilkan 5 tombol per baris
-        
-        # Loop untuk membuat baris
-        for row_start in range(0, n_soal, grid_cols):
-            cols = st.columns(grid_cols)
-            for i in range(grid_cols):
-                idx = row_start + i
+        for r in range(0, n_soal, 5):
+            cols = st.columns(5)
+            for i in range(5):
+                idx = r + i
                 if idx < n_soal:
                     q_id = st.session_state.test_questions[idx]['id']
-                    
-                    # LOGIKA WARNA TOMBOL
-                    # 1. Jika Ragu-Ragu -> Hijau (Primary) dengan icon peringatan
-                    # 2. Jika Sudah Dijawab -> Hijau (Primary)
-                    # 3. Jika Belum -> Abu-abu (Secondary)
-                    
-                    is_answered = q_id in st.session_state.user_answers
-                    is_ragu = st.session_state.ragu_ragu.get(q_id, False)
-                    
-                    b_type = "primary" if (is_answered or is_ragu) else "secondary"
-                    label = f"⚠️{idx+1}" if is_ragu else f"{idx+1}"
-                    
-                    if cols[i].button(label, key=f"nav_{idx}", use_container_width=True, type=b_type):
+                    bt = "primary" if (q_id in st.session_state.user_answers or st.session_state.ragu_ragu.get(q_id)) else "secondary"
+                    label = f"⚠️{idx+1}" if st.session_state.ragu_ragu.get(q_id) else f"{idx+1}"
+                    if cols[i].button(label, key=f"nav_{idx}", type=bt):
                         st.session_state.current_idx = idx
                         st.rerun()
-     
-    # Area Soal
-    q = st.session_state.test_questions[st.session_state.current_idx]
-    st.subheader(f"Soal Nomor {st.session_state.current_idx + 1}")
-    st.write(q['pertanyaan'])
-    
-    options = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
-    ans = st.radio("Pilih Jawaban:", options, key=f"r_{q['id']}")
-    st.session_state.user_answers[q['id']] = ans
 
-    # Tombol Navigasi
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ Kembali") and st.session_state.current_idx > 0:
-            st.session_state.current_idx -= 1
-            st.rerun()
-    with col2:
-        if st.session_state.current_idx < len(st.session_state.test_questions)-1:
-            if st.button("Lanjut ➡️"):
-                st.session_state.current_idx += 1
-                st.rerun()
+    q = st.session_state.test_questions[st.session_state.current_idx]
+    st.subheader(f"Soal {st.session_state.current_idx + 1} ({q['kategori'].upper()})")
+    st.write(q['pertanyaan'])
+    opts = [q['opsi_a'], q['opsi_b'], q['opsi_c'], q['opsi_d'], q['opsi_e']]
+    ans = st.radio("Jawaban:", opts, index=opts.index(st.session_state.user_answers[q['id']]) if q['id'] in st.session_state.user_answers else None, key=f"r_{q['id']}")
+    if ans: st.session_state.user_answers[q['id']] = ans
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.session_state.current_idx > 0:
+            if st.button("⬅️ Sebelumnya"): st.session_state.current_idx -= 1; st.rerun()
+    with c2:
+        st.checkbox("Ragu-Ragu", key=f"rg_{q['id']}", value=st.session_state.ragu_ragu.get(q['id'], False), on_change=lambda: st.session_state.ragu_ragu.update({q['id']: not st.session_state.ragu_ragu.get(q['id'], False)}))
+    with c3:
+        if st.session_state.current_idx < n_soal - 1:
+            if st.button("Lanjut ➡️"): st.session_state.current_idx += 1; st.rerun()
         else:
-            if st.button("🏁 SELESAI", type="primary"):
-                st.session_state.submitted = True
-                st.rerun()
+            if st.button("🏁 SELESAI", type="primary"): hitung_dan_simpan()
 
 def render_results():
-    st.balloons()
-    st.title("🎉 Hasil Ujian")
-     with tab_pembahasan:
-            st.title("📝 Review & Pembahasan")
-                
-            for q in st.session_state.test_questions:
-                with st.expander(f"Soal {st.session_state.test_questions.index(q)+1} - {q['kategori'].upper()}"):
-                    st.write(f"**Pertanyaan:** {q['pertanyaan']}")
-                    st.write(f"**Jawaban Anda:** {st.session_state.user_answers.get(q['id'], 'Tidak dijawab')}")
-                    st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
-                    st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
-                        
-        with tab_progres:
-            st.title("📊 Analisis Psikometri")
-                        
-            # Ambil data terbaru dari Supabase
-            res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=False).execute()
-                            
-            if res.data:
-                df = pd.DataFrame(res.data)
-                if not df.empty:
-                    latest = df.iloc[-1]
-                    # ... kode radar chart dan kawan-kawan ...
-                                
-                    # --- 1. GRAFIK RADAR (Visualisasi ala Data Scientist) ---
-                    import plotly.graph_objects as go
-                        
-                    categories = ['TIU', 'TWK', 'TKP']
-                    # Normalisasi skor ke skala 0-100 agar grafik radar simetris
-                    scores_norm = [
-                        (latest['skor_tiu'] / 175) * 100, 
-                        (latest['skor_twk'] / 150) * 100, 
-                        (latest['skor_tkp'] / 225) * 100
-                    ]
-    
-                    fig_radar = go.Figure()
-                    fig_radar.add_trace(go.Scatterpolar(
-                        r=scores_norm,
-                        theta=categories,
-                        fill='toself',
-                        name='Profil Anda',
-                        line_color='#1E88E5'
-                    ))
-                    
-                    fig_radar.update_layout(
-                        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-                        showlegend=True,
-                        title="Radar Kompetensi (Skala 100)"
-                    )
-                    
-                    fig_radar.update_xaxes(fixedrange=True) # Kunci sumbu horizontal
-                    fig_radar.update_yaxes(fixedrange=True) # Kunci sumbu vertikal
-                    fig_radar.update_layout(dragmode=False)
-                    
-                    # Gunakan config untuk mematikan scroll zoom dan menyembunyikan bar
-                    st.plotly_chart(fig_radar, use_container_width=True, config={
-                        'displayModeBar': False, 
-                        'scrollZoom': False
-                    })
-                        
-                    # --- 2. ANALISIS KEKUATAN & KELEMAHAN ---
-                    st.subheader("💡 Analisis Performa")
-                                    
-                    # Cari kategori dengan persentase terendah
-                    pct_scores = {
-                        'TIU': (latest['skor_tiu'] / 175),
-                        'TWK': (latest['skor_twk'] / 150),
-                        'TKP': (latest['skor_tkp'] / 225)
-                    }
-                    weakest = min(pct_scores, key=pct_scores.get)
-                    strongest = max(pct_scores, key=pct_scores.get)
-                
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        st.success(f"✅ **Kekuatan Utama:** {strongest}")
-                        st.write("Pertahankan performa ini! Kamu sudah memiliki pondasi yang kuat di aspek ini.")
-                    with c2:
-                        st.error(f"⚠️ **Perlu Ditingkatkan:** {weakest}")
-                        st.write(f"Fokuslah mempelajari materi {weakest} lebih dalam untuk mengejar ambang batas.")
-        
-                    # --- 3. STATUS KELULUSAN (Metrik) ---
-                    st.divider()
-                    col1, col2, col3 = st.columns(3)
-                    with col1: st.metric("Skor TIU", latest['skor_tiu'], f"Target {PASSING_TIU}")
-                    with col2: st.metric("Skor TWK", latest['skor_twk'], f"Target {PASSING_TWK}")
-                    with col3: st.metric("Skor TKP", latest['skor_tkp'], f"Target {PASSING_TKP}")
-                                    
-                    # --- 4. EVALUASI AMBANG BATAS ---
-                    st.markdown("---")
-                    st.subheader("📋 Status Kelulusan Terakhir")
-                                
-                    if latest['skor_tiu'] >= PASSING_TIU and \
-                        latest['skor_twk'] >= PASSING_TWK and \
-                        latest['skor_tkp'] >= PASSING_TKP:
-                        st.success("🎉 SELAMAT! Anda Lulus Ambang Batas BKN.")
-                        st.balloons()
-                    else:
-                        st.warning("⚠️ Skor Anda belum mencapai Ambang Batas.")
-                                    
-                    # --- 5.  STUDY PATH ---
-                    st.markdown("---")
-                    st.subheader("🤖 Study Path Recommendation")
-                    scores = {'TIU': latest['skor_tiu'], 'TWK': latest['skor_twk'], 'TKP': latest['skor_tkp']}
-                    weakest = min(scores, key=scores.get)
-                                
-                    if weakest == 'TIU':
-                        st.error(f"⚠️ **Prioritas:** Fokus pada Logika & Numerik. Skor TIU Anda masih di bawah {PASSING_TIU}.")
-                    elif weakest == 'TWK':
-                        st.warning(f"⚠️ **Prioritas:** Perdalam Sejarah & Pancasila. Target TWK adalah {PASSING_TWK}.")
-                    else:
-                        st.info(f"⚠️ **Prioritas:** Tingkatkan Kepribadian Profesional. Anda butuh {PASSING_TKP} di TKP.")
-                        
-                    # 6. Tombol Download Report (Taruh di bawah st.metric)
-                    st.write("---")
-                    try:
-                        pdf_bytes = export_as_pdf(latest)
-                        
-                        if pdf_bytes:
-                            st.download_button(
-                                label="📥 Download Laporan Hasil (PDF)",
-                                data=pdf_bytes,
-                                file_name=f"Rapor_CPNS_{latest['tanggal_tes'][:10]}.pdf",
-                                mime="application/pdf",
-                                key="btn_download_unique", # Tambahkan KEY unik di sini
-                                use_container_width=True
-                            )
-                    except Exception as e:
-                        st.error(f"Gagal menyiapkan file PDF: {e}")
-                else:
-                    st.info("Belum ada data kuis. Ayo mulai simulasi pertama kamu!")      
+    st.success("🎉 Simulasi Selesai!")
+    t_pem, t_psi, t_lb = st.tabs(["📝 Pembahasan", "📊 Psikometri", "🏆 Leaderboard"])
+
+    with t_pem:
+        for i, q in enumerate(st.session_state.test_questions):
+            with st.expander(f"Soal {i+1} - {q['kategori'].upper()}"):
+                st.write(f"**Pertanyaan:** {q['pertanyaan']}")
+                st.write(f"**Jawaban Anda:** {st.session_state.user_answers.get(q['id'], 'Tidak dijawab')}")
+                st.write(f"**Kunci Jawaban:** {q['jawaban_benar']}")
+                st.info(f"🧠 **Pembahasan:** {q.get('pembahasan', 'Belum ada penjelasan.')}")
+
+    with t_psi:
+        res = supabase.table("user_scores").select("*").eq("nama_user", st.session_state.user.email).order("tanggal_tes", desc=True).limit(1).execute()
+        if res.data:
+            latest = res.data[0]
+            cat = ['TIU', 'TWK', 'TKP']
+            val = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
+            fig = go.Figure(data=go.Scatterpolar(r=val, theta=cat, fill='toself'))
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), title="Radar Kompetensi")
+            st.plotly_chart(fig, use_container_width=True)
+            if st.button("📥 Download PDF"):
+                st.download_button("Klik untuk Unduh", export_as_pdf(latest), f"Rapor_{latest['tanggal_tes'][:10]}.pdf", "application/pdf")
+
+    with t_lb:
+        res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(10).execute()
+        if res_lb.data:
+            st.table(pd.DataFrame(res_lb.data))     
 
 # ==========================================
 # 3. SISTEM AUTH & ROUTING (UTAMA)
@@ -424,7 +293,9 @@ elif st.session_state.page == 'simulasi':
                     st.session_state.test_active = True
                     st.session_state.start_time = time.time()
                     st.rerun()
-        else: render_exam()
-    else: render_results()
+        else: 
+            render_exam()
+    else: 
+        render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
