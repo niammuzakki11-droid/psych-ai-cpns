@@ -80,12 +80,14 @@ def hitung_dan_simpan():
             
     total = sum(skor.values())
     # Menyiapkan data untuk dikirim ke Supabase
+    # PERBAIKAN DI SINI: Tambahkan kolom total_soal
     data_score = {
         "nama_user": st.session_state.user.email,
         "skor_tiu": skor['TIU'], 
         "skor_twk": skor['TWK'], 
         "skor_tkp": skor['TKP'],
         "skor_total": total,
+        "total_soal": len(st.session_state.test_questions), # Kolom ini wajib ada
         "durasi_detik": int(time.time() - st.session_state.start_time)
     }
     
@@ -311,4 +313,5 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
+
 
