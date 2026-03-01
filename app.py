@@ -53,19 +53,22 @@ def export_as_pdf(latest_data):
    
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
-
-# --- 2. CSS UNTUK NAVIGASI (Sidebar Grid) ---
+    
+# --- TARUH CSS DI SINI (Setelah set_page_config) ---
 st.markdown("""
     <style>
-    [data-testid="stSidebarNav"] {display: none;}
-    div.stButton > button {
-        width: 40px !important; height: 40px !important;
-        padding: 0px !important; font-size: 12px !important;
+    /* Mengubah tombol 'primary' menjadi Hijau (Terjawab/Ragu) */
+    div.stButton > button[kind="primary"] {
+        background-color: #28a745 !important;
+        color: white !important;
+        border: none !important;
     }
-    /* Hijau untuk Terjawab */
-    div.stButton > button[kind="primary"] { background-color: #28a745 !important; color: white !important; }
-    /* Kuning untuk Ragu (Targeting emoji) */
-    div.stButton > button:has(div:contains("⚠️")) { background-color: #ffc107 !important; color: black !important; }
+    /* Membuat tombol 'secondary' tetap Abu-abu (Belum Terjawab) */
+    div.stButton > button[kind="secondary"] {
+        background-color: #f0f2f6 !important;
+        color: #31333f !important;
+        border: 1px solid #dcdcdc !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -547,6 +550,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
