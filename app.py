@@ -74,10 +74,14 @@ def hitung_dan_simpan():
     for q in st.session_state.test_questions:
         ans = st.session_state.user_answers.get(q['id'])
         kat = q['kategori'].upper()
-        if kat != 'TKP' and ans == q['jawaban_benar']:
-            skor[kat] += 5
-        elif kat == 'TKP' and ans:
-            skor['TKP'] += 4 # Simulasi sederhana
+        
+        if kat != 'TKP':
+            if ans == q['jawaban_benar']:
+                skor[kat] += 5
+        else:
+            # Untuk TKP standar CPNS 1-5, di sini simulasi sederhana +5 jika ada jawaban
+            if ans:
+                skor['TKP'] += 5
             
     total = sum(skor.values())
     
@@ -197,19 +201,32 @@ def show_profile_page():
 def show_simulasi():
     if not st.session_state.submitted:
         if not st.session_state.test_active:
-            st.title("🛡️ Persiapan Ujian")
-            st.info(f"Target: TWK > {PASSING_TWK}, TIU > {PASSING_TIU}, TKP > {PASSING_TKP}")
-            if st.button("🚀 MULAI SESI UJIAN", type="primary"):
-                res_soal = supabase.table("bank_soal").select("*").execute()
-                if res_soal.data:
-                    # Logika pengacakan soal
-                    st.session_state.test_questions = res_soal.data # Contoh sederhana
+            st.title("🛡️ Simulasi CAT CPNS (110 Soal)")
+            st.info("Komposisi: 30 TWK, 35 TIU, 45 TKP. Waktu: 100 Menit.")
+            
+            if st.button("🚀 MULAI SIMULASI", type="primary"):
+                # Mengambil semua soal dari bank_soal
+                res = supabase.table("bank_soal").select("*").execute()
+                if res.data:
+                    df_soal = pd.DataFrame(res.data)
+                    
+                    # Logika pengambilan proporsional (pastikan bank soal cukup)
+                    twk = df_soal[df_soal['kategori'].str.upper() == 'TWK'].sample(n=min(30, len(df_soal[df_soal['kategori']=='TWK'])))
+                    tiu = df_soal[df_soal['kategori'].str.upper() == 'TIU'].sample(n=min(35, len(df_soal[df_soal['kategori']=='TIU'])))
+                    tkp = df_soal[df_soal['kategori'].str.upper() == 'TKP'].sample(n=min(45, len(df_soal[df_soal['kategori']=='TKP'])))
+                    
+                    # Gabungkan dan acak
+                    soal_final = pd.concat([twk, tiu, tkp]).sample(frac=1).to_dict('records')
+                    
+                    st.session_state.test_questions = soal_final
                     st.session_state.test_active = True
                     st.session_state.start_time = time.time()
+                    st.session_state.current_idx = 0
+                    st.session_state.user_answers = {}
                     st.rerun()
-        else:
+        else: 
             render_exam()
-    else:
+    else: 
         render_results()
 
 def render_exam():
@@ -270,7 +287,11 @@ def render_results():
             latest = res.data[0]
             categories = ['TIU', 'TWK', 'TKP']
             # Normalisasi skor
-            scores_norm = [(latest['skor_tiu']/175)*100, (latest['skor_twk']/150)*100, (latest['skor_tkp']/225)*100]
+            scores_norm = [
+                (latest['skor_tiu']/175)*100, 
+                (latest['skor_twk']/150)*100, 
+                (latest['skor_tkp']/225)*100
+            ]
             
             fig = go.Figure(data=go.Scatterpolar(
                 r=scores_norm, 
@@ -387,6 +408,7 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil': # <--- PASTIKAN INI BENAR
     show_profile_page()
+
 
 
 
