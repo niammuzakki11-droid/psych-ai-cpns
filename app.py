@@ -215,53 +215,45 @@ def show_landing_dashboard():
 # --- LOGIKA TAMPILAN UTAMA ---
 if st.session_state.page == 'dashboard':
     show_landing_dashboard()
-else:
-    # (Di sini masukkan seluruh kode tab_kuis, tab_progres, dll yang sudah kamu buat sebelumnya)
-    # Tambahkan tombol kembali di sidebar jika perlu
+
+elif st.session_state.page == 'simulasi':
+    # Tombol kembali di sidebar
     if st.sidebar.button("🏠 Kembali ke Dashboard"):
         st.session_state.page = 'dashboard'
         st.rerun()
-    
-    # MENJADI INI (Gunakan unpacking agar lebih jelas):
-    # --- LOGIKA TAMPILAN DINAMIS ---
+
+    # 1. CEK APAKAH SUDAH SUBMIT (HASIL) ATAU MASIH UJIAN
     if not st.session_state.get('submitted'):
-        # SAAT UJIAN: Hanya muncul satu tab
-        st.subheader("✍️ Simulasi Utama")
         
-        # 1. INISIALISASI STATE NAVIGASI (Hapus spasi berlebih di baris-baris ini)
-        if 'current_idx' not in st.session_state: 
-            st.session_state.current_idx = 0
-        if 'user_answers' not in st.session_state: 
-            st.session_state.user_answers = {}
-        if 'ragu_ragu' not in st.session_state: 
-            st.session_state.ragu_ragu = {}
-        
-            # --- KONDISI A: HALAMAN AWAL (TOMBOL MULAI) ---
-            if not st.session_state.get('test_active') and not st.session_state.get('submitted'):
-                st.title("🛡️ CAT SKD CPNS - Simulasi Resmi")
-                st.info(f"""
-                **Struktur Tes SKD:**
-                - **TWK**: 30 Soal | **TIU**: 35 Soal | **TKP**: 45 Soal
-                - **Waktu**: 100 Menit (Sistem akan berhenti otomatis)
-                - **Passing Grade**: TWK ({PASSING_TWK}), TIU ({PASSING_TIU}), TKP ({PASSING_TKP})
+        # --- KONDISI A: HALAMAN AWAL (BELUM KLIK MULAI) ---
+        if not st.session_state.get('test_active'):
+            st.title("🛡️ CAT SKD CPNS - Simulasi Utama")
+            st.info(f"""
+            **Struktur Tes SKD:**
+            - **TWK**: 30 Soal | **TIU**: 35 Soal | **TKP**: 45 Soal
+            - **Waktu**: 100 Menit
+            - **Passing Grade**: TWK ({PASSING_TWK}), TIU ({PASSING_TIU}), TKP ({PASSING_TKP})
                 """)
-        
-                if st.button("🚀 MULAI SESI UJIAN", use_container_width=True):
-                    res_soal = supabase.table("bank_soal").select("*").execute()
-                    if res_soal.data:
-                        df_all = pd.DataFrame(res_soal.data)
-                        def ambil_acak(kat, jml):
-                            df_kat = df_all[df_all['kategori'].str.upper() == kat.upper()]
-                            return df_kat.sample(n=min(len(df_kat), jml)).to_dict('records')
-        
-                        # Urutan resmi sesuai CAT BKN
-                        st.session_state.test_questions = ambil_acak('TWK', 30) + \
-                                                          ambil_acak('TIU', 35) + \
-                                                          ambil_acak('TKP', 45)
-                        st.session_state.test_active = True
-                        st.session_state.start_time = time.time()
-                        st.rerun()
-    
+            
+            if st.button("🚀 MULAI SESI UJIAN", use_container_width=True):
+                res_soal = supabase.table("bank_soal").select("*").execute()
+                if res_soal.data:
+                    df_all = pd.DataFrame(res_soal.data)
+                    def ambil_acak(kat, jml):
+                        df_kat = df_all[df_all['kategori'].str.upper() == kat.upper()]
+                        return df_kat.sample(n=min(len(df_kat), jml)).to_dict('records')
+
+                    st.session_state.test_questions = ambil_acak('TWK', 30) + \
+                                                      ambil_acak('TIU', 35) + \
+                                                      ambil_acak('TKP', 45)
+                    st.session_state.test_active = True
+                    st.session_state.start_time = time.time()
+                    st.rerun()
+
+        # --- KONDISI B: SEDANG MENGERJAKAN SOAL ---
+        else:
+            st.subheader("✍️ Simulasi Utama")
+            
             # --- KONDISI B: MODE UJIAN AKTIF (SISTEM NAVIGASI) ---
             elif st.session_state.get('test_active'):
                 # 1. TIMER & HEADER
@@ -558,6 +550,7 @@ else:
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
