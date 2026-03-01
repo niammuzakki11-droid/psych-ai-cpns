@@ -513,59 +513,40 @@ else:
 
 # ... (Blok tab_kuis dan tab_progres tetap sama) ...
 
-with tab_leaderboard:
-    st.title("🏆 Pejuang Teratas: Hall of Fame")
-    st.write("Daftar 10 besar skor tertinggi nasional di platform Psych-AI.")
-
-    # --- LOGIKA DATA SCIENCE: AGREGASI & SORTING ---
-    # Kita ambil data skor dari Supabase
-    res_lb = supabase.table("user_scores").select("nama_user, skor_total, skor_tiu, skor_twk, skor_tkp, tanggal_tes").order("skor_total", desc=True).limit(10).execute()
-
-    if res_lb.data:
-        df_lb = pd.DataFrame(res_lb.data)
-        
-        # Merapikan format tanggal
-        df_lb['tanggal_tes'] = pd.to_datetime(df_lb['tanggal_tes']).dt.strftime('%d %b %Y')
-
-        # Menambahkan kolom peringkat dengan medali
-        medals = ["🥇", "🥈", "🥉"] + [f"{i}." for i in range(4, 11)]
-        df_lb.insert(0, 'Peringkat', medals[:len(df_lb)])
-
-        # Mengganti nama kolom agar lebih cantik di layar
-        df_lb.columns = ['Rank', 'Email Peserta', 'Total Skor', 'TIU', 'TWK', 'TKP', 'Tanggal Ujian']
-
-        # Menampilkan tabel dengan gaya estetik
-        st.dataframe(
-            df_lb,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Total Skor": st.column_config.NumberColumn(format="%d 🔥"),
-                "Email Peserta": st.column_config.TextColumn("Pejuang")
-            }
-        )
-
-        # Highlight Skor Tertinggi
-        top_user = df_lb.iloc[0]
-        st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
-    else:
-        st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
-        
-# --- SIDEBAR LEADERBOARD ---
-st.sidebar.markdown("---")
-st.sidebar.subheader("🏆 Top Pejuang CPNS")
-res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(5).execute()
-if res_lb.data:
-    st.sidebar.table(pd.DataFrame(res_lb.data))
-
-
-
-
-
-
-
-
-
-
-
-
+    with tab_leaderboard:
+        st.title("🏆 Pejuang Teratas: Hall of Fame")
+        st.write("Daftar 10 besar skor tertinggi nasional di platform Psych-AI.")
+    
+        # --- LOGIKA DATA SCIENCE: AGREGASI & SORTING ---
+        # Kita ambil data skor dari Supabase
+        res_lb = supabase.table("user_scores").select("nama_user, skor_total, skor_tiu, skor_twk, skor_tkp, tanggal_tes").order("skor_total", desc=True).limit(10).execute()
+    
+        if res_lb.data:
+            df_lb = pd.DataFrame(res_lb.data)
+            
+            # Merapikan format tanggal
+            df_lb['tanggal_tes'] = pd.to_datetime(df_lb['tanggal_tes']).dt.strftime('%d %b %Y')
+    
+            # Menambahkan kolom peringkat dengan medali
+            medals = ["🥇", "🥈", "🥉"] + [f"{i}." for i in range(4, 11)]
+            df_lb.insert(0, 'Peringkat', medals[:len(df_lb)])
+    
+            # Mengganti nama kolom agar lebih cantik di layar
+            df_lb.columns = ['Rank', 'Email Peserta', 'Total Skor', 'TIU', 'TWK', 'TKP', 'Tanggal Ujian']
+    
+            # Menampilkan tabel dengan gaya estetik
+            st.dataframe(
+                df_lb,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Total Skor": st.column_config.NumberColumn(format="%d 🔥"),
+                    "Email Peserta": st.column_config.TextColumn("Pejuang")
+                }
+            )
+    
+            # Highlight Skor Tertinggi
+            top_user = df_lb.iloc[0]
+            st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
+        else:
+            st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
