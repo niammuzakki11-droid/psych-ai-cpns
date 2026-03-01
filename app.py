@@ -236,8 +236,8 @@ def render_results():
             st.plotly_chart(fig, use_container_width=True)
             
             # Tombol download PDF
-            pdf_bytes = export_as_pdf(latest)
-            st.download_button(label="📥 Download Rapor (PDF)", data=pdf_bytes, file_name=f"Rapor_CPNS_{latest['nama_user']}.pdf", mime="application/pdf")
+            if st.button("📥 Download Rapor"):
+                st.download_button("Klik Unduh", export_as_pdf(latest), "Rapor.pdf", "application/pdf")
 
     with t_lb:
         res_lb = supabase.table("user_scores").select("nama_user, skor_total").order("skor_total", desc=True).limit(10).execute()
@@ -313,5 +313,6 @@ elif st.session_state.page == 'simulasi':
         render_results()
 elif st.session_state.page == 'profil':
     show_dashboard()
+
 
 
