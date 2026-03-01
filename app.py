@@ -54,52 +54,87 @@ def export_as_pdf(latest_data):
     # Pastikan mengembalikan bytes murni
     return bytes(pdf.output())
 
-    # 2. GRID NAVIGASI (Versi Mobile Friendly)
+    # 2. GRID NAVIGASI (Versi Kotak & Warna Kustom)
     st.markdown("### Navigasi Soal")
         
-    # CSS untuk membuat grid tombol yang rapat dan tetap menyamping di HP
+    # CSS Custom untuk mengubah bentuk dan warna tombol
     st.markdown("""
         <style>
+        /* Container utama agar tombol rapat */
         .flex-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 8px;
             justify-content: flex-start;
+            margin-bottom: 20px;
         }
-        /* Memaksa lebar tombol agar kotak (misal 40px) */
+
+        /* Setel tombol jadi PERSEGI (Square) */
         div.stButton > button {
-            min-width: 45px !important;
-            max-width: 45px !important;
-            padding: 5px !important;
+            width: 45px !important;
             height: 45px !important;
+            border-radius: 5px !important; /* Kotak dengan sudut halus */
+            padding: 0px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold !important;
+            border: 1px solid #d1d1d1 !important;
+        }
+
+        /* WARNA HIJAU: Jika soal sudah diisi (Button Type Primary) */
+        div.stButton > button[kind="primary"] {
+            background-color: #28a745 !important; /* Hijau */
+            color: white !important;
+            border: none !important;
+        }
+
+        /* WARNA KUNING: Jika Ragu-Ragu (Kita akali dengan atribut khusus di label nanti) */
+        /* Karena Streamlit hanya punya 2 tipe, kita deteksi teks '⚠️' atau class tertentu */
+        div.stButton > button:contains("⚠️") {
+            background-color: #ffc107 !important; /* Kuning */
+            color: black !important;
+            border: none !important;
+        }
+        
+        /* WARNA DEFAULT/KOSONG: Abu-abu (Button Type Secondary) */
+        div.stButton > button[kind="secondary"] {
+            background-color: #f0f2f6;
+            color: #31333F;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Buat kontainer pembungkus
-    st.markdown('<div class="flex-container">', unsafe_allow_html=True)
-        
     n_soal = len(st.session_state.test_questions)
-        
-    # Loop semua soal dalam satu baris besar (akan otomatis terbungkus oleh CSS flex-wrap)
-    for idx in range(n_soal):
-        q_id = st.session_state.test_questions[idx]['id']
-            
-        # Logika Label & Warna
-        if st.session_state.ragu_ragu.get(q_id):
-            btn_label, btn_type = f"⚠️{idx+1}", "primary"
-        elif q_id in st.session_state.user_answers:
-            btn_label, btn_type = f"{idx+1}", "primary"
-        else:
-            btn_label, btn_type = f"{idx+1}", "secondary"
-            
-        # Menggunakan kolom di dalam loop ini agar Streamlit bisa merender tombol
-        # Tapi kita buat kolomnya sangat banyak dalam satu 'row'
-        if st.button(btn_label, key=f"nav_{idx}", type=btn_type):
-            st.session_state.current_idx = idx
-            st.rerun()
-        
-    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Gunakan columns untuk layouting tombol di dalam loop
+    # Kita buat baris-baris berisi 8-10 tombol agar rapi di Mobile
+    cols_per_row = 8 
+    for i in range(0, n_soal, cols_per_row):
+        cols = st.columns(cols_per_row)
+        for j in range(cols_per_row):
+            idx = i + j
+            if idx < n_soal:
+                q_id = st.session_state.test_questions[idx]['id']
+                
+                # LOGIKA WARNA & LABEL
+                if st.session_state.ragu_ragu.get(q_id):
+                    # KUNING (Dideteksi CSS lewat icon ⚠️)
+                    btn_label = f"⚠️{idx+1}"
+                    btn_type = "secondary" 
+                elif q_id in st.session_state.user_answers:
+                    # HIJAU (Primary)
+                    btn_label = f"{idx+1}"
+                    btn_type = "primary"
+                else:
+                    # NORMAL/KOSONG (Secondary)
+                    btn_label = f"{idx+1}"
+                    btn_type = "secondary"
+                
+                if cols[j].button(btn_label, key=f"nav_new_{idx}", use_container_width=True, type=btn_type):
+                    st.session_state.current_idx = idx
+                    st.rerun()
+                    
     st.divider()
 
 # --- LOGIKA AUTO-LOGIN YANG AMAN ---
@@ -580,6 +615,7 @@ elif st.session_state.page == 'simulasi':
                 st.success(f"🌟 **MVP Saat Ini:** {top_user['Email Peserta']} dengan skor fantastis **{top_user['Total Skor']}**!")
             else:
                 st.info("Belum ada data di papan peringkat. Jadilah yang pertama!")
+
 
 
 
